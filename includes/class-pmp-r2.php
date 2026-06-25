@@ -69,7 +69,7 @@ class PMP_R2 {
 
         $query_params = [
             'X-Amz-Algorithm'     => 'AWS4-HMAC-SHA256',
-            'X-Amz-Credential'   => urlencode( "$access_key/$scope" ),
+            'X-Amz-Credential'   => "$access_key/$scope",
             'X-Amz-Date'         => $datetime,
             'X-Amz-Expires'      => $expires_seconds,
             'X-Amz-SignedHeaders' => 'host',
