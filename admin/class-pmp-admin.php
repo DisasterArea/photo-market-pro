@@ -97,7 +97,62 @@ class PMP_Admin {
     public static function ajax_save_photo() {
         check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
+
         $photo_id = intval( $_POST['photo_id'] ?? 0 );
+
+        // R2 file upload when a photo file is attached
+        if ( ! empty( $_FILES['photo_file'] ) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+
+            $file      = $_FILES['photo_file'];
+            $attach_id = media_handle_sideload( [
+                'name'     => $file['name'],
+                'tmp_name' => $file['tmp_name'],
+                'type'     => $file['type'],
+                'error'    => $file['error'],
+                'size'     => $file['size'],
+            ], 0 );
+
+            if ( ! is_wp_error( $attach_id ) ) {
+                $r2_key   = 'eredeti/' . time() . '_' . $file['name'];
+                $path     = get_attached_file( $attach_id );
+                $size     = filesize( $path );
+                $put_url  = self::generate_r2_put_url( $r2_key, $file['type'], $size );
+                $host     = get_option( 'pmp_r2_account_id' ) . '.r2.cloudflarestorage.com';
+
+                $ch = curl_init();
+                curl_setopt( $ch, CURLOPT_URL,            $put_url );
+                curl_setopt( $ch, CURLOPT_CUSTOMREQUEST,  'PUT' );
+                curl_setopt( $ch, CURLOPT_POSTFIELDS,     file_get_contents( $path ) );
+                curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+                curl_setopt( $ch, CURLOPT_HEADER,         false );
+                curl_setopt( $ch, CURLOPT_HTTPHEADER, [
+                    'Host: '           . $host,
+                    'Content-Type: '   . $file['type'],
+                    'Content-Length: ' . $size,
+                ] );
+                curl_exec( $ch );
+                $http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+                curl_close( $ch );
+
+                if ( $http_code === 200 ) {
+                    $_POST['use_external']     = 1;
+                    $_POST['external_key']     = $r2_key;
+                    // Use the sideloaded image as preview if none set
+                    if ( empty( $_POST['preview_image_id'] ) ) {
+                        $_POST['preview_image_id'] = $attach_id;
+                    }
+                } else {
+                    wp_delete_attachment( $attach_id, true );
+                    wp_send_json_error( 'R2 feltöltés sikertelen (HTTP ' . $http_code . ')' );
+                }
+            } else {
+                wp_send_json_error( 'Fájl feldolgozási hiba: ' . $attach_id->get_error_message() );
+            }
+        }
+
         $photo_id = PMP_Photo::save( $_POST, $photo_id );
         wp_send_json_success( [ 'photo_id' => $photo_id ] );
     }
@@ -126,6 +181,7 @@ class PMP_Admin {
         if ( ! $photo ) wp_send_json_error( 'Not found' );
         $photo['edit_option_ids']   = PMP_Photo::get_photo_edit_option_ids( $photo['id'] );
         $photo['preview_url_thumb'] = $photo['preview_image_id'] ? wp_get_attachment_image_url( $photo['preview_image_id'], 'thumbnail' ) : '';
+        $photo['price']             = $photo['product_id'] ? (float) get_post_meta( $photo['product_id'], '_price', true ) : 0;
         wp_send_json_success( $photo );
     }
 
