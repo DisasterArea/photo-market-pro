@@ -70,6 +70,7 @@ class PMP_Install {
             download_count  INT             NOT NULL DEFAULT 0,
             max_downloads   INT             NOT NULL DEFAULT 3,
             edited_key      VARCHAR(500)    NULL DEFAULT NULL,
+            label           VARCHAR(200)    NULL DEFAULT NULL,
             created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY token (token),
@@ -87,6 +88,11 @@ class PMP_Install {
         $cols = $wpdb->get_col( "SHOW COLUMNS FROM {$wpdb->prefix}pmp_download_tokens LIKE 'edited_key'" );
         if ( empty( $cols ) ) {
             $wpdb->query( "ALTER TABLE {$wpdb->prefix}pmp_download_tokens ADD COLUMN edited_key VARCHAR(500) NULL DEFAULT NULL" );
+        }
+        // Upgrade: add label column if missing (v1.4.0+)
+        $cols = $wpdb->get_col( "SHOW COLUMNS FROM {$wpdb->prefix}pmp_download_tokens LIKE 'label'" );
+        if ( empty( $cols ) ) {
+            $wpdb->query( "ALTER TABLE {$wpdb->prefix}pmp_download_tokens ADD COLUMN label VARCHAR(200) NULL DEFAULT NULL" );
         }
 
         // Seed default edit options if empty

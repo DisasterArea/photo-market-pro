@@ -9,12 +9,20 @@ class PMP_Order {
         add_action( 'add_meta_boxes', [ __CLASS__, 'register_order_meta_box' ] );
     }
 
+    /**
+     * Fires when order is marked Completed.
+     * Creates download tokens for all PMP photos in the order,
+     * including any pre-uploaded edited versions the admin added,
+     * then sends ONE email with all download links.
+     */
     public static function handle_completed_order( $order_id ) {
-        // Only run once
         if ( get_post_meta( $order_id, '_pmp_tokens_sent', true ) ) return;
 
-        $order  = wc_get_order( $order_id );
+        $order = wc_get_order( $order_id );
         if ( ! $order ) return;
+
+        // Pre-uploaded edited versions stored before completion
+        $pre_uploads = get_post_meta( $order_id, '_pmp_edited_uploads', true ) ?: [];
 
         $tokens_created = [];
 
@@ -25,41 +33,49 @@ class PMP_Order {
             $photo = PMP_Photo::get_by_product( $product->get_id() );
             if ( ! $photo ) continue;
 
-            $qty = $item->get_quantity();
+            $qty        = $item->get_quantity();
+            $base_title = $photo['title'] ?: $product->get_name();
+
             for ( $i = 0; $i < $qty; $i++ ) {
+                // Original photo token
                 $token = PMP_Download::create_token(
-                    $order_id,
-                    $item_id,
-                    $photo['id'],
-                    $order->get_billing_email()
+                    $order_id, $item_id, $photo['id'],
+                    $order->get_billing_email(),
+                    'Eredeti'
                 );
                 $tokens_created[] = [
-                    'photo_title'   => $photo['title'] ?: $product->get_name(),
+                    'photo_title'   => $base_title,
+                    'label'         => 'Eredeti',
                     'download_url'  => PMP_Download::get_download_url( $token ),
                     'expires_hours' => get_option( 'pmp_download_expiry_hours', 48 ),
                     'max_downloads' => get_option( 'pmp_download_max_count', 3 ),
                 ];
+
+                // Edited versions pre-uploaded by admin for this order item
+                foreach ( $pre_uploads as $pu ) {
+                    if ( (int) $pu['order_item_id'] !== (int) $item_id ) continue;
+                    $token = PMP_Download::create_token(
+                        $order_id, $item_id, $photo['id'],
+                        $order->get_billing_email(),
+                        $pu['label'],
+                        $pu['r2_key']
+                    );
+                    $tokens_created[] = [
+                        'photo_title'   => $base_title,
+                        'label'         => $pu['label'],
+                        'download_url'  => PMP_Download::get_download_url( $token ),
+                        'expires_hours' => get_option( 'pmp_download_expiry_hours', 48 ),
+                        'max_downloads' => get_option( 'pmp_download_max_count', 3 ),
+                    ];
+                }
             }
         }
 
         if ( empty( $tokens_created ) ) return;
 
         update_post_meta( $order_id, '_pmp_tokens_data', $tokens_created );
-
-        // Only auto-send email if no edit requests in the order
-        $has_edit_request = false;
-        foreach ( $order->get_items() as $item ) {
-            if ( $item->get_meta( 'Szerkesztési opciók' ) || $item->get_meta( 'Megjegyzés' ) ) {
-                $has_edit_request = true;
-                break;
-            }
-        }
-
-        if ( ! $has_edit_request ) {
-            self::send_download_email( $order, $tokens_created );
-            update_post_meta( $order_id, '_pmp_tokens_sent', true );
-        }
-        // If edit request: tokens exist, admin sends email manually from order page
+        self::send_download_email( $order, $tokens_created );
+        update_post_meta( $order_id, '_pmp_tokens_sent', true );
     }
 
     public static function send_download_email_public( $order, $tokens ) {
@@ -90,7 +106,7 @@ class PMP_Order {
         return $emails;
     }
 
-    /* ── Admin meta box: letöltési linkek a rendelés oldalon ── */
+    /* ── Admin meta box ── */
 
     public static function register_order_meta_box() {
         $screen = wc_get_page_screen_id( 'shop-order' );
@@ -107,35 +123,37 @@ class PMP_Order {
     public static function render_order_meta_box( $post_or_order ) {
         $order_id = $post_or_order instanceof WP_Post ? $post_or_order->ID : $post_or_order->get_id();
         $order    = wc_get_order( $order_id );
-        $tokens   = PMP_Download::get_tokens_for_order( $order_id );
+        if ( ! $order ) return;
 
-        if ( empty( $tokens ) ) {
-            echo '<p style="color:#999; padding:4px 0;">Ehhez a rendeléshez még nem tartoznak letöltési linkek.<br>';
-            echo '<em>Linkek generálásához állítsd a rendelést <strong>Teljesített</strong> státuszba.</em></p>';
-            return;
-        }
+        $is_completed = $order->get_status() === 'completed';
+        $nonce        = wp_create_nonce( 'pmp_admin_nonce' );
+        $pre_uploads  = get_post_meta( $order_id, '_pmp_edited_uploads', true ) ?: [];
 
-        // Collect edit requests from order items
+        // Collect PMP order items and edit requests
+        $pmp_items     = [];
         $edit_requests = [];
-        if ( $order ) {
-            foreach ( $order->get_items() as $item ) {
-                $opts = $item->get_meta( 'Szerkesztési opciók' );
-                $note = $item->get_meta( 'Megjegyzés' );
-                if ( $opts || $note ) {
-                    $edit_requests[] = [
-                        'product' => $item->get_name(),
-                        'options' => $opts,
-                        'note'    => $note,
-                    ];
-                }
+        foreach ( $order->get_items() as $item_id => $item ) {
+            $product = $item->get_product();
+            if ( ! $product || ! $product->get_meta( '_pmp_photo' ) ) continue;
+            $pmp_items[ $item_id ] = $item;
+            $opts = $item->get_meta( 'Szerkesztési opciók' );
+            $note = $item->get_meta( 'Megjegyzés' );
+            if ( $opts || $note ) {
+                $edit_requests[ $item_id ] = [ 'name' => $item->get_name(), 'options' => $opts, 'note' => $note ];
             }
         }
 
+        if ( empty( $pmp_items ) ) {
+            echo '<p style="color:#999;">Ez a rendelés nem tartalmaz fotót.</p>';
+            return;
+        }
+
+        // ── Edit requests warning ──
         if ( ! empty( $edit_requests ) ) {
             echo '<div style="background:#fff8e1;border-left:4px solid #ffb900;padding:8px 12px;margin-bottom:12px;">';
             echo '<strong>⚠ Szerkesztési kérések:</strong><ul style="margin:6px 0 0 16px;">';
             foreach ( $edit_requests as $req ) {
-                echo '<li><strong>' . esc_html( $req['product'] ) . ':</strong> ';
+                echo '<li><strong>' . esc_html( $req['name'] ) . ':</strong> ';
                 if ( $req['options'] ) echo esc_html( $req['options'] );
                 if ( $req['note'] )    echo ' – <em>' . esc_html( $req['note'] ) . '</em>';
                 echo '</li>';
@@ -143,97 +161,150 @@ class PMP_Order {
             echo '</ul></div>';
         }
 
-        $already_sent = get_post_meta( $order_id, '_pmp_tokens_sent', true );
-
-        echo '<table class="widefat striped" style="margin-top:4px;">';
-        echo '<thead><tr><th>Fotó</th><th>Lejárat / státusz</th><th>Letöltések</th><th>Szerkesztett változat</th><th>Link</th></tr></thead><tbody>';
-        foreach ( $tokens as $t ) {
-            $expired   = strtotime( $t['expires_at'] ) < time();
-            $exhausted = (int) $t['download_count'] >= (int) $t['max_downloads'];
-            $url       = PMP_Download::get_download_url( $t['token'] );
-            $status    = $expired ? '<span style="color:#d63638;">lejárt</span>'
-                       : ( $exhausted ? '<span style="color:#d63638;">kimerült</span>' : '<span style="color:#00a32a;">aktív</span>' );
-            $has_edited = ! empty( $t['edited_key'] );
-            echo '<tr>';
-            echo '<td>' . esc_html( $t['photo_title'] ?: '–' ) . '</td>';
-            echo '<td>' . esc_html( wp_date( 'Y.m.d H:i', strtotime( $t['expires_at'] ) ) ) . '<br>' . $status . '</td>';
-            echo '<td>' . (int) $t['download_count'] . ' / ' . (int) $t['max_downloads'] . '</td>';
-            echo '<td>';
-            if ( $has_edited ) {
-                echo '<span style="color:#00a32a;">✓ feltöltve</span><br>';
+        // ── If completed: show generated tokens ──
+        if ( $is_completed ) {
+            $tokens = PMP_Download::get_tokens_for_order( $order_id );
+            if ( ! empty( $tokens ) ) {
+                echo '<table class="widefat striped" style="margin-bottom:12px;">';
+                echo '<thead><tr><th>Fotó</th><th>Változat</th><th>Lejárat</th><th>Letöltve</th><th>Link</th></tr></thead><tbody>';
+                foreach ( $tokens as $t ) {
+                    $expired   = strtotime( $t['expires_at'] ) < time();
+                    $exhausted = (int) $t['download_count'] >= (int) $t['max_downloads'];
+                    $url       = PMP_Download::get_download_url( $t['token'] );
+                    $status    = $expired ? '<span style="color:#d63638;">lejárt</span>'
+                               : ( $exhausted ? '<span style="color:#d63638;">kimerült</span>' : '<span style="color:#00a32a;">aktív</span>' );
+                    echo '<tr>';
+                    echo '<td>' . esc_html( $t['photo_title'] ?: '–' ) . '</td>';
+                    echo '<td>' . esc_html( $t['label'] ?: 'Eredeti' ) . '</td>';
+                    echo '<td>' . esc_html( wp_date( 'Y.m.d H:i', strtotime( $t['expires_at'] ) ) ) . ' ' . $status . '</td>';
+                    echo '<td>' . (int) $t['download_count'] . '/' . (int) $t['max_downloads'] . '</td>';
+                    echo '<td><input type="text" value="' . esc_attr( $url ) . '" readonly style="width:100%;font-size:11px;" onclick="this.select()"></td>';
+                    echo '</tr>';
+                }
+                echo '</tbody></table>';
             }
-            echo '<label class="pmp-upload-label" style="font-size:12px;cursor:pointer;">';
-            echo '<input type="file" class="pmp-edited-file" data-token="' . esc_attr( $t['token'] ) . '" accept="image/*,.jpg,.jpeg,.png,.tif,.tiff,.pdf" style="display:none;">';
-            echo $has_edited ? 'Csere' : 'Feltöltés';
-            echo '</label>';
-            echo '<span class="pmp-upload-status" style="font-size:11px;display:block;"></span>';
-            echo '</td>';
-            echo '<td><input type="text" value="' . esc_attr( $url ) . '" readonly style="width:100%;font-size:11px;" onclick="this.select()"></td>';
-            echo '</tr>';
+            $sent = get_post_meta( $order_id, '_pmp_tokens_sent', true );
+            echo '<p style="font-size:12px;color:#646970;">';
+            echo $sent ? '✓ Email elküldve a vásárlónak.' : '⚠ Email még nem ment ki.';
+            if ( $sent ) {
+                echo ' <button type="button" class="button button-small" id="pmp-resend-email-btn" data-order="' . esc_attr( $order_id ) . '">Újraküldés</button>';
+                echo ' <span id="pmp-resend-status" style="margin-left:6px;"></span>';
+            }
+            echo '</p>';
         }
-        echo '</tbody></table>';
 
-        echo '<p style="margin-top:10px;">';
-        if ( $already_sent ) {
-            echo '<span style="color:#00a32a;margin-right:10px;">✓ Email már elküldve</span>';
+        // ── Pre-upload section (visible even before completion) ──
+        if ( ! $is_completed ) {
+            echo '<p style="color:#646970;font-size:12px;margin-bottom:10px;">A rendelés teljesítésekor egy emailt kap a vásárló az összes letöltési linkkel. Ha szerkesztett változatot is szeretnél küldeni, töltsd fel itt mielőtt <strong>Teljesítettre</strong> állítod.</p>';
         }
-        echo '<button type="button" class="button button-primary" id="pmp-send-order-email" data-order="' . esc_attr( $order_id ) . '">';
-        echo $already_sent ? 'Email újraküldése' : 'Letöltési email küldése';
-        echo '</button> <span id="pmp-email-send-status" style="font-size:12px;margin-left:8px;"></span>';
-        echo '</p>';
 
-        // Inline JS for this meta box (only loaded on order pages)
-        $nonce = wp_create_nonce( 'pmp_admin_nonce' );
+        echo '<div id="pmp-edited-uploads-wrap">';
+
+        // List existing pre-uploads
+        if ( ! empty( $pre_uploads ) && ! $is_completed ) {
+            echo '<table class="widefat striped" style="margin-bottom:10px;">';
+            echo '<thead><tr><th>Megnevezés</th><th>Termék</th><th>Fájl (R2 kulcs)</th><th></th></tr></thead><tbody>';
+            foreach ( $pre_uploads as $idx => $pu ) {
+                $item_name = isset( $pmp_items[ $pu['order_item_id'] ] ) ? $pmp_items[ $pu['order_item_id'] ]->get_name() : '–';
+                echo '<tr id="pmp-preupload-row-' . (int) $idx . '">';
+                echo '<td>' . esc_html( $pu['label'] ) . '</td>';
+                echo '<td>' . esc_html( $item_name ) . '</td>';
+                echo '<td style="font-size:11px;color:#888;">' . esc_html( $pu['r2_key'] ) . '</td>';
+                echo '<td><button type="button" class="button button-small pmp-delete-preupload" data-order="' . esc_attr( $order_id ) . '" data-idx="' . (int) $idx . '">✕</button></td>';
+                echo '</tr>';
+            }
+            echo '</tbody></table>';
+        }
+
+        if ( ! $is_completed ) {
+            // Upload form
+            echo '<div style="background:#f9f9f9;border:1px solid #ddd;padding:12px;border-radius:4px;">';
+            echo '<strong style="display:block;margin-bottom:8px;">+ Szerkesztett változat hozzáadása</strong>';
+
+            // Product selector (if multiple PMP items)
+            if ( count( $pmp_items ) > 1 ) {
+                echo '<label style="font-size:12px;">Termék:<br><select id="pmp-upload-item-id" style="width:100%;margin-bottom:8px;">';
+                foreach ( $pmp_items as $iid => $item ) {
+                    echo '<option value="' . esc_attr( $iid ) . '">' . esc_html( $item->get_name() ) . '</option>';
+                }
+                echo '</select></label>';
+            } else {
+                $first_item_id = array_key_first( $pmp_items );
+                echo '<input type="hidden" id="pmp-upload-item-id" value="' . esc_attr( $first_item_id ) . '">';
+            }
+
+            echo '<label style="font-size:12px;">Megnevezés (pl. Fekete-fehér, Háttércsere):<br>';
+            echo '<input type="text" id="pmp-upload-label" placeholder="pl. Fekete-fehér változat" style="width:100%;margin-bottom:8px;"></label>';
+            echo '<label style="font-size:12px;">Fájl kiválasztása:<br>';
+            echo '<input type="file" id="pmp-upload-file" accept="image/*,.pdf" style="margin-bottom:8px;"></label>';
+            echo '<br><button type="button" class="button button-primary" id="pmp-add-edited-btn" data-order="' . esc_attr( $order_id ) . '">Feltöltés R2-re</button>';
+            echo ' <span id="pmp-upload-status" style="font-size:12px;margin-left:8px;"></span>';
+            echo '</div>';
+        }
+
+        echo '</div>'; // #pmp-edited-uploads-wrap
+
+        // Inline JS
         echo '<script>
 (function($){
     var ajaxurl = ' . json_encode( admin_url( 'admin-ajax.php' ) ) . ';
     var nonce   = ' . json_encode( $nonce ) . ';
 
-    // File input → upload edited photo
-    $(document).on("change", ".pmp-edited-file", function(){
-        var $inp    = $(this);
-        var token   = $inp.data("token");
-        var $status = $inp.closest("td").find(".pmp-upload-status");
-        var file    = $inp[0].files[0];
-        if (!file) return;
+    // Upload edited photo
+    $(document).on("click", "#pmp-add-edited-btn", function(){
+        var $btn    = $(this).prop("disabled", true).text("Feltöltés...");
+        var orderId = $btn.data("order");
+        var itemId  = $("#pmp-upload-item-id").val();
+        var label   = $("#pmp-upload-label").val().trim();
+        var file    = $("#pmp-upload-file")[0].files[0];
+        var $status = $("#pmp-upload-status");
+
+        if (!label) { $status.text("Add meg a megnevezést!").css("color","#d63638"); $btn.prop("disabled",false).text("Feltöltés R2-re"); return; }
+        if (!file)  { $status.text("Válassz fájlt!").css("color","#d63638"); $btn.prop("disabled",false).text("Feltöltés R2-re"); return; }
 
         $status.text("Feltöltés...").css("color","#555");
         var fd = new FormData();
-        fd.append("action",     "pmp_upload_edited_photo");
-        fd.append("nonce",      nonce);
-        fd.append("token",      token);
-        fd.append("edited_file", file);
+        fd.append("action",        "pmp_upload_edited_photo");
+        fd.append("nonce",         nonce);
+        fd.append("order_id",      orderId);
+        fd.append("order_item_id", itemId);
+        fd.append("label",         label);
+        fd.append("edited_file",   file);
 
         $.ajax({
-            url: ajaxurl, type:"POST", data: fd,
-            processData:false, contentType:false,
+            url: ajaxurl, type:"POST", data: fd, processData:false, contentType:false,
             success: function(res){
+                $btn.prop("disabled",false).text("Feltöltés R2-re");
                 if (res.success) {
-                    $status.text("✓ Kész").css("color","#00a32a");
-                    $inp.closest("td").find(".pmp-upload-label").html("Csere " +
-                        \'<input type="file" class="pmp-edited-file" data-token="\' + token + \'" accept="image/*,.jpg,.jpeg,.png,.tif,.tiff,.pdf" style="display:none;">\');
+                    $status.text("✓ Feltöltve!").css("color","#00a32a");
+                    $("#pmp-upload-label").val("");
+                    $("#pmp-upload-file").val("");
+                    // Refresh meta box
+                    setTimeout(function(){ location.reload(); }, 800);
                 } else {
                     $status.text("❌ " + (res.data||"hiba")).css("color","#d63638");
                 }
             },
-            error: function(){
-                $status.text("❌ Szerver hiba").css("color","#d63638");
-            }
+            error: function(){ $btn.prop("disabled",false).text("Feltöltés R2-re"); $status.text("❌ Szerver hiba").css("color","#d63638"); }
         });
     });
 
-    // Send email button
-    $(document).on("click", "#pmp-send-order-email", function(){
-        var $btn    = $(this).prop("disabled", true).text("Küldés...");
-        var orderId = $btn.data("order");
-        var $status = $("#pmp-email-send-status");
-        $.post(ajaxurl, {action:"pmp_send_order_email", nonce:nonce, order_id:orderId}, function(res){
-            $btn.prop("disabled", false).text("Email újraküldése");
-            if (res.success) {
-                $status.text("✅ Email elküldve!").css("color","#00a32a");
-            } else {
-                $status.text("❌ " + (res.data||"hiba")).css("color","#d63638");
-            }
+    // Delete pre-upload
+    $(document).on("click", ".pmp-delete-preupload", function(){
+        if (!confirm("Törlöd ezt a feltöltött változatot?")) return;
+        var $btn = $(this);
+        $.post(ajaxurl, {action:"pmp_delete_preupload", nonce:nonce, order_id:$btn.data("order"), idx:$btn.data("idx")}, function(res){
+            if (res.success) location.reload();
+        });
+    });
+
+    // Resend email
+    $(document).on("click", "#pmp-resend-email-btn", function(){
+        var $btn = $(this).prop("disabled",true).text("Küldés...");
+        $.post(ajaxurl, {action:"pmp_send_order_email", nonce:nonce, order_id:$btn.data("order")}, function(res){
+            $btn.prop("disabled",false).text("Újraküldés");
+            $("#pmp-resend-status").text(res.success ? "✅ Elküldve!" : "❌ " + (res.data||"hiba"))
+                .css("color", res.success ? "#00a32a" : "#d63638");
         });
     });
 })(jQuery);
