@@ -23,7 +23,9 @@ class PMP_Admin {
         add_action( 'wp_ajax_pmp_resend_links',          [ __CLASS__, 'ajax_resend_links' ] );
         add_action( 'wp_ajax_pmp_extend_token',          [ __CLASS__, 'ajax_extend_token' ] );
         add_action( 'wp_ajax_pmp_delete_token',          [ __CLASS__, 'ajax_delete_token' ] );
-        add_action( 'wp_ajax_pmp_clean_orphaned_tokens', [ __CLASS__, 'ajax_clean_orphaned_tokens' ] );
+        add_action( 'wp_ajax_pmp_clean_orphaned_tokens',  [ __CLASS__, 'ajax_clean_orphaned_tokens' ] );
+        add_action( 'wp_ajax_pmp_upload_edited_photo',    [ __CLASS__, 'ajax_upload_edited_photo' ] );
+        add_action( 'wp_ajax_pmp_send_order_email',       [ __CLASS__, 'ajax_send_order_email' ] );
     }
 
     public static function admin_menu() {
@@ -460,6 +462,98 @@ class PMP_Admin {
             wp_send_json_success( 'A letöltési link törölve.' );
         }
         wp_send_json_error( 'Hiányzó token.' );
+    }
+
+    public static function ajax_upload_edited_photo() {
+        check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
+
+        $token = sanitize_text_field( $_POST['token'] ?? '' );
+        if ( ! $token ) wp_send_json_error( 'Hiányzó token.' );
+
+        if ( empty( $_FILES['edited_file'] ) || $_FILES['edited_file']['error'] !== UPLOAD_ERR_OK ) {
+            wp_send_json_error( 'Fájl feltöltési hiba.' );
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+
+        $file      = $_FILES['edited_file'];
+        $attach_id = media_handle_sideload( [
+            'name'     => $file['name'],
+            'tmp_name' => $file['tmp_name'],
+            'type'     => $file['type'],
+            'error'    => $file['error'],
+            'size'     => $file['size'],
+        ], 0 );
+
+        if ( is_wp_error( $attach_id ) ) {
+            wp_send_json_error( 'Fájl feldolgozási hiba: ' . $attach_id->get_error_message() );
+        }
+
+        $r2_key  = 'szerkesztett/' . time() . '_' . sanitize_file_name( $file['name'] );
+        $path    = get_attached_file( $attach_id );
+        $size    = filesize( $path );
+        $host    = get_option( 'pmp_r2_account_id' ) . '.r2.cloudflarestorage.com';
+        $put_url = self::generate_r2_put_url( $r2_key, $file['type'], $size );
+
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL,            $put_url );
+        curl_setopt( $ch, CURLOPT_CUSTOMREQUEST,  'PUT' );
+        curl_setopt( $ch, CURLOPT_POSTFIELDS,     file_get_contents( $path ) );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_HEADER,         false );
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, [
+            'Host: '           . $host,
+            'Content-Type: '   . $file['type'],
+            'Content-Length: ' . $size,
+        ] );
+        curl_exec( $ch );
+        $http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+        curl_close( $ch );
+
+        wp_delete_attachment( $attach_id, true );
+
+        if ( $http_code !== 200 ) {
+            wp_send_json_error( 'R2 feltöltés sikertelen (HTTP ' . $http_code . ')' );
+        }
+
+        global $wpdb;
+        $wpdb->update(
+            $wpdb->prefix . 'pmp_download_tokens',
+            [ 'edited_key' => $r2_key ],
+            [ 'token'      => $token ]
+        );
+
+        wp_send_json_success( [ 'edited_key' => $r2_key ] );
+    }
+
+    public static function ajax_send_order_email() {
+        check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
+
+        $order_id = intval( $_POST['order_id'] ?? 0 );
+        $order    = wc_get_order( $order_id );
+        if ( ! $order ) wp_send_json_error( 'Rendelés nem található.' );
+
+        $tokens = PMP_Download::get_tokens_for_order( $order_id );
+        if ( empty( $tokens ) ) wp_send_json_error( 'Nincsenek letöltési linkek.' );
+
+        $tokens_for_email = [];
+        foreach ( $tokens as $t ) {
+            $tokens_for_email[] = [
+                'photo_title'   => $t['photo_title'] ?: '–',
+                'download_url'  => PMP_Download::get_download_url( $t['token'] ),
+                'expires_hours' => get_option( 'pmp_download_expiry_hours', 48 ),
+                'max_downloads' => get_option( 'pmp_download_max_count', 3 ),
+            ];
+        }
+
+        PMP_Order::send_download_email_public( $order, $tokens_for_email );
+        update_post_meta( $order_id, '_pmp_tokens_sent', true );
+
+        wp_send_json_success( 'Email elküldve.' );
     }
 
     public static function ajax_clean_orphaned_tokens() {
