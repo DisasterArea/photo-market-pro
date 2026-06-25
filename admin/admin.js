@@ -45,7 +45,7 @@ jQuery(function($){
             $('#pmp-field-location').val(p.location);
             $('#pmp-field-category').val(p.category);
             $('#pmp-field-shot-date').val(p.shot_date || '');
-            $('#pmp-field-price').val('');
+            $('#pmp-field-price').val(p.price > 0 ? p.price : '');
             $('#pmp-field-use-external').prop('checked', p.use_external == 1).trigger('change');
             $('#pmp-field-external-key').val(p.external_key || '');
             $('#pmp-field-download-url').val(p.download_url || '');
@@ -69,6 +69,7 @@ jQuery(function($){
     function resetPhotoForm() {
         $('#pmp-edit-photo-id').val('');
         $('#pmp-field-title, #pmp-field-location, #pmp-field-category, #pmp-field-shot-date, #pmp-field-price, #pmp-field-external-key, #pmp-field-download-url').val('');
+        $('#pmp-field-photo-file').val('');
         $('#pmp-field-use-external').prop('checked', false).trigger('change');
         $('#pmp-preview-image-id').val('');
         $('#pmp-preview-img').attr('src','').hide();
@@ -111,32 +112,43 @@ jQuery(function($){
         var optIds = [];
         $('.pmp-opt-cb:checked').each(function(){ optIds.push($(this).val()); });
 
-        var data = {
-            action:           'pmp_save_photo',
-            nonce:            nonce,
-            photo_id:         $('#pmp-edit-photo-id').val(),
-            title:            $('#pmp-field-title').val(),
-            location:         $('#pmp-field-location').val(),
-            category:         $('#pmp-field-category').val(),
-            shot_date:        $('#pmp-field-shot-date').val(),
-            price:            $('#pmp-field-price').val(),
-            preview_image_id: $('#pmp-preview-image-id').val(),
-            use_external:     $('#pmp-field-use-external').is(':checked') ? 1 : 0,
-            external_key:     $('#pmp-field-external-key').val(),
-            download_url:     $('#pmp-field-download-url').val(),
-            'edit_option_ids[]': optIds,
-        };
-
-        if (!data.location) { msg('#pmp-save-msg','Helyszín kötelező!',false); return; }
-        if (!data.category) { msg('#pmp-save-msg','Kategória kötelező!',false); return; }
+        var location = $('#pmp-field-location').val();
+        var category = $('#pmp-field-category').val();
+        if (!location) { msg('#pmp-save-msg','Helyszín kötelező!',false); return; }
+        if (!category) { msg('#pmp-save-msg','Kategória kötelező!',false); return; }
 
         msg('#pmp-save-msg','Mentés...', null);
-        $.post(ajaxurl, data, function(res){
-            if (res.success) {
-                msg('#pmp-save-msg','✅ Mentve!', true);
-                setTimeout(function(){ location.reload(); }, 900);
-            } else {
-                msg('#pmp-save-msg','❌ Hiba: '+(res.data||''), false);
+
+        var photoFile = $('#pmp-field-photo-file')[0].files[0];
+        var formData  = new FormData();
+        formData.append('action',           'pmp_save_photo');
+        formData.append('nonce',            nonce);
+        formData.append('photo_id',         $('#pmp-edit-photo-id').val());
+        formData.append('title',            $('#pmp-field-title').val());
+        formData.append('location',         location);
+        formData.append('category',         category);
+        formData.append('shot_date',        $('#pmp-field-shot-date').val());
+        formData.append('price',            $('#pmp-field-price').val());
+        formData.append('preview_image_id', $('#pmp-preview-image-id').val());
+        formData.append('use_external',     $('#pmp-field-use-external').is(':checked') ? 1 : 0);
+        formData.append('external_key',     $('#pmp-field-external-key').val());
+        formData.append('download_url',     $('#pmp-field-download-url').val());
+        optIds.forEach(function(id){ formData.append('edit_option_ids[]', id); });
+        if (photoFile) {
+            formData.append('photo_file', photoFile);
+            msg('#pmp-save-msg','Feltöltés R2-re...', null);
+        }
+
+        $.ajax({
+            url: ajaxurl, type: 'POST', data: formData,
+            processData: false, contentType: false,
+            success: function(res){
+                if (res.success) {
+                    msg('#pmp-save-msg','✅ Mentve!', true);
+                    setTimeout(function(){ location.reload(); }, 900);
+                } else {
+                    msg('#pmp-save-msg','❌ Hiba: '+(res.data||''), false);
+                }
             }
         });
     });

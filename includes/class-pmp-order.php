@@ -20,7 +20,7 @@ class PMP_Order {
 
         foreach ( $order->get_items() as $item_id => $item ) {
             $product = $item->get_product();
-            if ( ! $product || $product->get_type() !== 'pmp_photo' ) continue;
+            if ( ! $product || ! $product->get_meta( '_pmp_photo' ) ) continue;
 
             $photo = PMP_Photo::get_by_product( $product->get_id() );
             if ( ! $photo ) continue;

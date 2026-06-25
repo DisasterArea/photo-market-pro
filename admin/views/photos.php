@@ -118,7 +118,9 @@
         <h3>Letöltési forrás</h3>
         <label><input type="checkbox" id="pmp-field-use-external"> Külső szerver (Cloudflare R2)</label>
         <div id="pmp-external-fields" style="display:none;margin-top:8px;">
-          <label>R2 fájl kulcs (pl. eredeti/foto.jpg)</label>
+          <label>Fájl feltöltése R2-re</label>
+          <input type="file" id="pmp-field-photo-file" accept="image/*" style="margin-bottom:8px;">
+          <label>Vagy R2 fájl kulcs kézzel (pl. eredeti/foto.jpg)</label>
           <input type="text" id="pmp-field-external-key" class="widefat">
         </div>
         <div id="pmp-direct-url-field" style="margin-top:8px;">
