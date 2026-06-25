@@ -7,6 +7,19 @@ class PMP_Order {
         add_action( 'woocommerce_order_status_completed', [ __CLASS__, 'handle_completed_order' ] );
         add_filter( 'woocommerce_email_classes', [ __CLASS__, 'register_email' ] );
         add_action( 'add_meta_boxes', [ __CLASS__, 'register_order_meta_box' ] );
+        // Suppress WC's own "completed order" email for PMP orders – we send our own
+        add_filter( 'woocommerce_email_enabled_customer_completed_order', [ __CLASS__, 'suppress_wc_completed_email' ], 10, 2 );
+    }
+
+    public static function suppress_wc_completed_email( $enabled, $order ) {
+        if ( ! $order ) return $enabled;
+        foreach ( $order->get_items() as $item ) {
+            $product = $item->get_product();
+            if ( $product && $product->get_meta( '_pmp_photo' ) ) {
+                return false;
+            }
+        }
+        return $enabled;
     }
 
     /**
