@@ -46,8 +46,8 @@ class PMP_Download {
         // Increment download count
         self::increment_count( $token );
 
-        // Redirect to R2 presigned URL or direct URL
-        $download_url = self::resolve_download_url( $photo );
+        // Redirect to R2 presigned URL or direct URL (edited version takes priority)
+        $download_url = self::resolve_download_url( $photo, $row['edited_key'] ?? '' );
         if ( ! $download_url ) {
             wp_die( __( 'A fájl letöltési útvonala nincs beállítva.', 'photo-market-pro' ), 500 );
         }
@@ -56,9 +56,13 @@ class PMP_Download {
         exit;
     }
 
-    private static function resolve_download_url( $photo ) {
+    private static function resolve_download_url( $photo, $edited_key = '' ) {
+        $expires = intval( get_option( 'pmp_download_expiry_hours', 48 ) ) * 3600;
+        // Edited version takes priority
+        if ( ! empty( $edited_key ) && PMP_R2::is_enabled() ) {
+            return PMP_R2::presigned_url( $edited_key, $expires );
+        }
         if ( $photo['use_external'] && ! empty( $photo['external_key'] ) && PMP_R2::is_enabled() ) {
-            $expires = intval( get_option( 'pmp_download_expiry_hours', 48 ) ) * 3600;
             return PMP_R2::presigned_url( $photo['external_key'], $expires );
         }
         if ( ! empty( $photo['download_url'] ) ) {
