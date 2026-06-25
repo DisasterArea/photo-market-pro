@@ -73,15 +73,15 @@ class PMP_Download {
 
     // ── Token creation ───────────────────────────────────────────────
 
-    public static function create_token( $order_id, $order_item_id, $photo_id, $customer_email ) {
+    public static function create_token( $order_id, $order_item_id, $photo_id, $customer_email, $label = '', $edited_key = '' ) {
         global $wpdb;
 
-        $token       = bin2hex( random_bytes( 32 ) ); // 64-char hex
+        $token       = bin2hex( random_bytes( 32 ) );
         $expiry_h    = intval( get_option( 'pmp_download_expiry_hours', 48 ) );
         $max_dl      = intval( get_option( 'pmp_download_max_count', 3 ) );
         $expires_at  = gmdate( 'Y-m-d H:i:s', time() + $expiry_h * 3600 );
 
-        $wpdb->insert( $wpdb->prefix . 'pmp_download_tokens', [
+        $data = [
             'token'          => $token,
             'order_id'       => $order_id,
             'order_item_id'  => $order_item_id,
@@ -89,7 +89,11 @@ class PMP_Download {
             'customer_email' => $customer_email,
             'expires_at'     => $expires_at,
             'max_downloads'  => $max_dl,
-        ]);
+        ];
+        if ( $label )      $data['label']      = $label;
+        if ( $edited_key ) $data['edited_key'] = $edited_key;
+
+        $wpdb->insert( $wpdb->prefix . 'pmp_download_tokens', $data );
 
         return $token;
     }

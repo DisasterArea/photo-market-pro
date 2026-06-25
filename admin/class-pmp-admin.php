@@ -25,6 +25,7 @@ class PMP_Admin {
         add_action( 'wp_ajax_pmp_delete_token',          [ __CLASS__, 'ajax_delete_token' ] );
         add_action( 'wp_ajax_pmp_clean_orphaned_tokens',  [ __CLASS__, 'ajax_clean_orphaned_tokens' ] );
         add_action( 'wp_ajax_pmp_upload_edited_photo',    [ __CLASS__, 'ajax_upload_edited_photo' ] );
+        add_action( 'wp_ajax_pmp_delete_preupload',       [ __CLASS__, 'ajax_delete_preupload' ] );
         add_action( 'wp_ajax_pmp_send_order_email',       [ __CLASS__, 'ajax_send_order_email' ] );
     }
 
@@ -468,8 +469,11 @@ class PMP_Admin {
         check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
 
-        $token = sanitize_text_field( $_POST['token'] ?? '' );
-        if ( ! $token ) wp_send_json_error( 'Hiányzó token.' );
+        $order_id    = intval( $_POST['order_id'] ?? 0 );
+        $item_id     = intval( $_POST['order_item_id'] ?? 0 );
+        $label       = sanitize_text_field( $_POST['label'] ?? '' );
+
+        if ( ! $order_id || ! $item_id || ! $label ) wp_send_json_error( 'Hiányzó adatok.' );
 
         if ( empty( $_FILES['edited_file'] ) || $_FILES['edited_file']['error'] !== UPLOAD_ERR_OK ) {
             wp_send_json_error( 'Fájl feltöltési hiba.' );
@@ -519,14 +523,31 @@ class PMP_Admin {
             wp_send_json_error( 'R2 feltöltés sikertelen (HTTP ' . $http_code . ')' );
         }
 
-        global $wpdb;
-        $wpdb->update(
-            $wpdb->prefix . 'pmp_download_tokens',
-            [ 'edited_key' => $r2_key ],
-            [ 'token'      => $token ]
-        );
+        // Store as pre-upload on order meta
+        $uploads   = get_post_meta( $order_id, '_pmp_edited_uploads', true ) ?: [];
+        $uploads[] = [
+            'label'         => $label,
+            'r2_key'        => $r2_key,
+            'order_item_id' => $item_id,
+        ];
+        update_post_meta( $order_id, '_pmp_edited_uploads', $uploads );
 
-        wp_send_json_success( [ 'edited_key' => $r2_key ] );
+        wp_send_json_success( [ 'r2_key' => $r2_key, 'label' => $label ] );
+    }
+
+    public static function ajax_delete_preupload() {
+        check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
+
+        $order_id = intval( $_POST['order_id'] ?? 0 );
+        $idx      = intval( $_POST['idx'] ?? -1 );
+        $uploads  = get_post_meta( $order_id, '_pmp_edited_uploads', true ) ?: [];
+
+        if ( isset( $uploads[ $idx ] ) ) {
+            array_splice( $uploads, $idx, 1 );
+            update_post_meta( $order_id, '_pmp_edited_uploads', $uploads );
+        }
+        wp_send_json_success();
     }
 
     public static function ajax_send_order_email() {
@@ -544,6 +565,7 @@ class PMP_Admin {
         foreach ( $tokens as $t ) {
             $tokens_for_email[] = [
                 'photo_title'   => $t['photo_title'] ?: '–',
+                'label'         => $t['label'] ?: 'Eredeti',
                 'download_url'  => PMP_Download::get_download_url( $t['token'] ),
                 'expires_hours' => get_option( 'pmp_download_expiry_hours', 48 ),
                 'max_downloads' => get_option( 'pmp_download_max_count', 3 ),
@@ -551,8 +573,6 @@ class PMP_Admin {
         }
 
         PMP_Order::send_download_email_public( $order, $tokens_for_email );
-        update_post_meta( $order_id, '_pmp_tokens_sent', true );
-
         wp_send_json_success( 'Email elküldve.' );
     }
 

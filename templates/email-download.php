@@ -34,9 +34,11 @@
       Köszönjük a vásárlást! Az alábbi gombokra kattintva töltheti le a megvásárolt fotó(ka)t.
     </p>
 
-    <?php foreach ( $tokens as $item ) : ?>
+    <?php foreach ( $tokens as $item ) :
+        $label = ! empty( $item['label'] ) && $item['label'] !== 'Eredeti' ? $item['label'] : '';
+    ?>
     <div class="download-card">
-      <h3><?php echo esc_html( $item['photo_title'] ); ?></h3>
+      <h3><?php echo esc_html( $item['photo_title'] ); ?><?php if ( $label ) echo ' <span style="font-size:13px;font-weight:normal;color:#888;">– ' . esc_html( $label ) . '</span>'; ?></h3>
       <p class="meta">⏱ Érvényes: <?php echo intval( $item['expires_hours'] ); ?> óra</p>
       <p class="meta">📥 Max. letöltés: <?php echo intval( $item['max_downloads'] ); ?>×</p>
       <a class="download-btn" href="<?php echo esc_url( $item['download_url'] ); ?>">
