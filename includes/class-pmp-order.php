@@ -5,8 +5,8 @@ class PMP_Order {
 
     public static function init() {
         add_action( 'woocommerce_order_status_completed', [ __CLASS__, 'handle_completed_order' ] );
-        add_action( 'woocommerce_order_status_processing', [ __CLASS__, 'handle_completed_order' ] ); // for instant payment
         add_filter( 'woocommerce_email_classes', [ __CLASS__, 'register_email' ] );
+        add_action( 'add_meta_boxes', [ __CLASS__, 'register_order_meta_box' ] );
     }
 
     public static function handle_completed_order( $order_id ) {
@@ -72,6 +72,49 @@ class PMP_Order {
     }
 
     public static function register_email( $emails ) {
-        return $emails; // Future: custom WC email class
+        return $emails;
+    }
+
+    /* ── Admin meta box: letöltési linkek a rendelés oldalon ── */
+
+    public static function register_order_meta_box() {
+        $screen = wc_get_page_screen_id( 'shop-order' );
+        add_meta_box(
+            'pmp_order_downloads',
+            '📷 Fotó letöltési linkek',
+            [ __CLASS__, 'render_order_meta_box' ],
+            $screen ?: 'shop_order',
+            'normal',
+            'default'
+        );
+    }
+
+    public static function render_order_meta_box( $post_or_order ) {
+        $order_id = $post_or_order instanceof WP_Post ? $post_or_order->ID : $post_or_order->get_id();
+        $tokens   = PMP_Download::get_tokens_for_order( $order_id );
+
+        if ( empty( $tokens ) ) {
+            echo '<p style="color:#999; padding:4px 0;">Ehhez a rendeléshez még nem tartoznak letöltési linkek.<br>';
+            echo '<em>Linkek generálásához állítsd a rendelést <strong>Teljesített</strong> státuszba.</em></p>';
+            return;
+        }
+
+        echo '<table class="widefat striped" style="margin-top:8px;">';
+        echo '<thead><tr><th>Fotó</th><th>Lejárat</th><th>Letöltések</th><th>Link</th></tr></thead><tbody>';
+        foreach ( $tokens as $t ) {
+            $expired   = strtotime( $t['expires_at'] ) < time();
+            $exhausted = (int) $t['download_count'] >= (int) $t['max_downloads'];
+            $url       = PMP_Download::get_download_url( $t['token'] );
+            $status    = $expired ? '<span style="color:#d63638;">lejárt</span>'
+                       : ( $exhausted ? '<span style="color:#d63638;">kimerült</span>' : '<span style="color:#00a32a;">aktív</span>' );
+            echo '<tr>';
+            echo '<td>' . esc_html( $t['photo_title'] ?: '–' ) . '</td>';
+            echo '<td>' . esc_html( wp_date( 'Y.m.d H:i', strtotime( $t['expires_at'] ) ) ) . ' ' . $status . '</td>';
+            echo '<td>' . (int) $t['download_count'] . ' / ' . (int) $t['max_downloads'] . '</td>';
+            echo '<td><input type="text" value="' . esc_attr( $url ) . '" readonly style="width:100%;font-size:11px;" onclick="this.select()"></td>';
+            echo '</tr>';
+        }
+        echo '</tbody></table>';
+        echo '<p style="margin-top:8px; font-size:12px; color:#646970;">A linkeket a vevőnek kézzel is elküldhetjük, vagy a rendelés teljesítésekor automatikusan megy az email.</p>';
     }
 }

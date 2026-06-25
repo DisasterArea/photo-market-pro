@@ -143,9 +143,6 @@ class PMP_Public {
     /* ── AJAX: chained filter options ───────────────────────── */
 
     public static function ajax_get_filter_options() {
-        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'pmp_public_nonce' ) ) {
-            wp_send_json_error( 'Nonce error' );
-        }
         global $wpdb;
 
         $location = sanitize_text_field( $_POST['location'] ?? '' );
