@@ -163,7 +163,9 @@ body input[type="date"].pmp-filter-select {
   color: #fff !important;
   -webkit-text-fill-color: #fff !important;
   font-size: 13px !important;
-  line-height: normal !important;
+  line-height: 40px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   box-sizing: border-box !important;
   appearance: none;
   -webkit-appearance: none;
@@ -367,13 +369,7 @@ body input.pmp-filter-select:focus {
   align-items: center;
 }
 .pmp-card:hover .pmp-card-cta { background: var(--pmp-accent2); }
-.pmp-cta-text { display: inline; }
-.pmp-cta-icon { display: none !important; font-style: normal; }
-@media (max-width: 600px) {
-  .pmp-card-cta { padding: 5px 8px; font-size: 14px; }
-  .pmp-cta-text { display: none !important; }
-  .pmp-cta-icon { display: inline !important; }
-}
+.pmp-card-cta { font-size: 18px; padding: 4px 10px; }
 
 /* ── Loading ──────────────────────────────────────── */
 .pmp-gallery-loading {
