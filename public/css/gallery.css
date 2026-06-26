@@ -81,6 +81,11 @@
   content: none !important;
 }
 
+/* Hide native select when aurel_select is active */
+.pmp-select-wrap select {
+  display: none !important;
+}
+
 /* aurel_select wrapper: match our input styling */
 .pmp-select-wrap .aurel_select_wrapper {
   min-width: 0 !important;
