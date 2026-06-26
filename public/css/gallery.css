@@ -21,11 +21,15 @@
 .pmp-filters {
   background: var(--pmp-bg);
   border-bottom: 1px solid var(--pmp-border);
-  padding: 14px 20px;
-  margin-bottom: 24px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+@media (max-width: 600px) {
+  .pmp-filters { padding: 10px 12px; margin-bottom: 12px; }
 }
 
 .pmp-filter-row {
@@ -41,11 +45,16 @@
 
 @media (max-width: 900px) {
   .pmp-filter-group { flex: 1 1 calc(50% - 10px); }
-  .pmp-filter-btns  { flex: 0 0 auto; align-self: flex-end; }
+  .pmp-filter-btns  { flex: 0 0 auto; }
 }
 
 @media (max-width: 480px) {
-  .pmp-filter-group, .pmp-filter-btns { flex: 1 1 100%; }
+  .pmp-filter-row   { gap: 8px; }
+  .pmp-filter-group { flex: 1 1 calc(50% - 8px); }
+  .pmp-filter-btns  { flex: 0 0 auto; }
+  .pmp-filter-label { font-size: 9px; }
+  .pmp-filter-select { height: 36px; font-size: 12px; }
+  .pmp-btn-reset    { height: 36px; font-size: 12px; padding: 0 12px; }
 }
 
 .pmp-filter-group {
@@ -103,10 +112,7 @@
 }
 
 .pmp-filter-btns {
-  flex-direction: row;
-  align-items: flex-end;
-  display: flex;
-  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .pmp-btn-reset {
