@@ -7,10 +7,10 @@ class PMP_Public {
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_scripts' ] );
         add_shortcode( 'pmp_gallery', [ __CLASS__, 'shortcode_gallery' ] );
 
-        add_action( 'wp_ajax_pmp_photo_gallery_filter',         [ __CLASS__, 'ajax_filter_gallery' ] );
-        add_action( 'wp_ajax_nopriv_pmp_photo_gallery_filter',  [ __CLASS__, 'ajax_filter_gallery' ] );
-        add_action( 'wp_ajax_pmp_photo_gallery_options',         [ __CLASS__, 'ajax_get_filter_options' ] );
-        add_action( 'wp_ajax_nopriv_pmp_photo_gallery_options',  [ __CLASS__, 'ajax_get_filter_options' ] );
+        add_action( 'wp_ajax_pmp_v2_gallery_filter',         [ __CLASS__, 'ajax_filter_gallery' ] );
+        add_action( 'wp_ajax_nopriv_pmp_v2_gallery_filter',  [ __CLASS__, 'ajax_filter_gallery' ] );
+        add_action( 'wp_ajax_pmp_v2_gallery_opts',           [ __CLASS__, 'ajax_get_filter_options' ] );
+        add_action( 'wp_ajax_nopriv_pmp_v2_gallery_opts',    [ __CLASS__, 'ajax_get_filter_options' ] );
 
         add_action( 'woocommerce_view_order', [ __CLASS__, 'show_order_downloads' ], 15 );
         add_action( 'woocommerce_thankyou',   [ __CLASS__, 'show_order_downloads' ], 15 );
