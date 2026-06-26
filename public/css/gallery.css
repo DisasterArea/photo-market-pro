@@ -75,7 +75,8 @@
 .pmp-select-wrap {
   position: relative;
 }
-.pmp-select-wrap::after {
+/* Only show our arrow when aurel_select is NOT active */
+.pmp-select-wrap:not(:has(.aurel_select_wrapper))::after {
   content: '▾';
   position: absolute;
   right: 11px;
@@ -84,6 +85,69 @@
   color: var(--pmp-muted);
   pointer-events: none;
   font-size: 12px;
+}
+
+/* aurel_select wrapper: match our input styling */
+.pmp-select-wrap .aurel_select_wrapper {
+  min-width: 0 !important;
+  width: 100%;
+}
+.pmp-select-wrap .aurel_select {
+  height: 40px;
+  line-height: 40px;
+  padding: 0 32px 0 12px;
+  background: var(--pmp-surface);
+  border: 1px solid var(--pmp-border);
+  border-radius: var(--pmp-radius);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: border-color .2s;
+  position: relative;
+}
+.pmp-select-wrap .aurel_select::after {
+  content: '▾';
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--pmp-muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+.pmp-select-wrap .aurel_select:hover,
+.pmp-select-wrap .aurel_select.open {
+  border-color: var(--pmp-accent);
+}
+.pmp-select-wrap ul.select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--pmp-surface);
+  border: 1px solid var(--pmp-border);
+  border-top: none;
+  border-radius: 0 0 var(--pmp-radius) var(--pmp-radius);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.pmp-select-wrap ul.select-options li {
+  padding: 8px 12px;
+  color: #ccc;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pmp-select-wrap ul.select-options li:hover,
+.pmp-select-wrap ul.select-options li.selected {
+  background: rgba(232,160,32,.15);
+  color: #fff;
 }
 
 .pmp-filter-select {
@@ -113,8 +177,7 @@
 
 .pmp-filter-btns {
   flex: 0 0 auto;
-  justify-content: flex-end;
-  align-self: flex-end;
+  padding-top: 22px; /* matches label height + gap so button aligns with inputs */
 }
 
 .pmp-btn-reset {
