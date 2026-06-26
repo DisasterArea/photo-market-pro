@@ -53,8 +53,8 @@
   .pmp-filter-group { flex: 1 1 calc(50% - 8px); }
   .pmp-filter-btns  { flex: 0 0 auto; }
   .pmp-filter-label { font-size: 9px; }
-  .pmp-filter-select { height: 36px; font-size: 12px; }
-  .pmp-btn-reset    { height: 36px; font-size: 12px; padding: 0 12px; }
+  .pmp-filter-select { height: 36px; font-size: 11px; }
+  .pmp-btn-reset    { height: 36px; font-size: 11px; padding: 0 12px; }
 }
 
 .pmp-filter-group {
@@ -157,11 +157,11 @@ body input.pmp-filter-select,
 body input[type="date"].pmp-filter-select {
   width: 100% !important;
   height: 40px !important;
-  padding: 0 32px 0 12px !important;
   background: var(--pmp-surface) !important;
   border: 1px solid var(--pmp-border) !important;
   border-radius: var(--pmp-radius) !important;
   color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
   font-size: 13px !important;
   line-height: normal !important;
   margin: 0 !important;
@@ -243,7 +243,6 @@ body input.pmp-filter-select:focus {
 @media (max-width: 1100px) { .pmp-masonry { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 800px)  { .pmp-masonry { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 560px)  { .pmp-masonry { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 360px)  { .pmp-masonry { grid-template-columns: 1fr; } }
 
 /* ── Card ─────────────────────────────────────────── */
 .pmp-card {
