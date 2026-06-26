@@ -182,7 +182,10 @@ body input.pmp-filter-select:focus {
 
 .pmp-date-input {
   padding: 0 12px;
-  color-scheme: dark;
+}
+.pmp-date-input::placeholder {
+  color: #666;
+  opacity: 1;
 }
 
 .pmp-filter-btns {
@@ -368,11 +371,12 @@ body input.pmp-filter-select:focus {
   align-items: center;
 }
 .pmp-card:hover .pmp-card-cta { background: var(--pmp-accent2); }
-.pmp-cta-icon { display: none; font-style: normal; }
+.pmp-cta-text { display: inline; }
+.pmp-cta-icon { display: none !important; font-style: normal; }
 @media (max-width: 600px) {
-  .pmp-cta-text { display: none; }
-  .pmp-cta-icon { display: inline; }
   .pmp-card-cta { padding: 5px 8px; font-size: 14px; }
+  .pmp-cta-text { display: none !important; }
+  .pmp-cta-icon { display: inline !important; }
 }
 
 /* ── Loading ──────────────────────────────────────── */
