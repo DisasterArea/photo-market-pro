@@ -75,17 +75,6 @@
 .pmp-select-wrap {
   position: relative;
 }
-/* Only show our arrow when aurel_select is NOT active */
-.pmp-select-wrap:not(:has(.aurel_select_wrapper))::after {
-  content: '▾';
-  position: absolute;
-  right: 11px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--pmp-muted);
-  pointer-events: none;
-  font-size: 12px;
-}
 
 /* aurel_select wrapper: match our input styling */
 .pmp-select-wrap .aurel_select_wrapper {
@@ -94,7 +83,9 @@
 }
 .pmp-select-wrap .aurel_select {
   height: 40px !important;
-  line-height: 40px !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
   padding: 0 32px 0 12px !important;
   background: var(--pmp-surface) !important;
   border: 1px solid var(--pmp-border) !important;
@@ -163,8 +154,9 @@ body input[type="date"].pmp-filter-select {
   color: #fff !important;
   -webkit-text-fill-color: #fff !important;
   font-size: 13px !important;
-  line-height: normal !important;
-  padding: 10px 12px !important;
+  line-height: 1 !important;
+  padding: 0 12px !important;
+  vertical-align: middle !important;
   box-sizing: border-box !important;
   appearance: none;
   -webkit-appearance: none;
