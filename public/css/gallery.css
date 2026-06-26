@@ -113,6 +113,8 @@
 
 .pmp-filter-btns {
   flex: 0 0 auto;
+  justify-content: flex-end;
+  align-self: flex-end;
 }
 
 .pmp-btn-reset {

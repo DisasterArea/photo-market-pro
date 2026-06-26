@@ -62,7 +62,6 @@ class PMP_Public {
                 <input type="date" id="pmp-f-date-to" class="pmp-filter-select pmp-date-input">
               </div>
               <div class="pmp-filter-group pmp-filter-btns">
-                <label class="pmp-filter-label" aria-hidden="true">&nbsp;</label>
                 <button class="pmp-btn-reset" id="pmp-reset-filter">✕ Törlés</button>
               </div>
             </div>
