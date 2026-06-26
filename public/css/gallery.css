@@ -152,7 +152,9 @@
   color: #fff;
 }
 
-.pmp-filter-select {
+body .pmp-gallery-wrap .pmp-filter-select,
+body input.pmp-filter-select,
+body input[type="date"].pmp-filter-select {
   width: 100% !important;
   height: 40px !important;
   padding: 0 32px 0 12px !important;
@@ -170,7 +172,8 @@
   cursor: pointer;
   vertical-align: top !important;
 }
-.pmp-filter-select:focus {
+body .pmp-gallery-wrap .pmp-filter-select:focus,
+body input.pmp-filter-select:focus {
   outline: none !important;
   border-color: var(--pmp-accent) !important;
   box-shadow: none !important;
