@@ -100,7 +100,7 @@ class PMP_Public {
                 <label class="pmp-filter-label">📍 Helyszín</label>
                 <div class="pmp-select-wrap">
                   <select id="pmp-f-location" class="pmp-filter-select">
-                    <option value="">Minden helyszín</option>
+                    <option value="">Válassz</option>
                   </select>
                 </div>
               </div>
@@ -108,7 +108,7 @@ class PMP_Public {
                 <label class="pmp-filter-label">🏷 Kategória</label>
                 <div class="pmp-select-wrap">
                   <select id="pmp-f-category" class="pmp-filter-select">
-                    <option value="">Minden kategória</option>
+                    <option value="">Válassz</option>
                   </select>
                 </div>
               </div>

@@ -29,7 +29,7 @@
 }
 
 @media (max-width: 600px) {
-  .pmp-filters { padding: 10px 12px; margin-bottom: 12px; }
+  .pmp-filters { margin-bottom: 12px; }
 }
 
 .pmp-filter-row {
@@ -112,14 +112,7 @@
   margin: 0 !important;
 }
 .pmp-select-wrap .aurel_select::after {
-  content: '▾';
-  position: absolute;
-  right: 11px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--pmp-muted);
-  font-size: 12px;
-  pointer-events: none;
+  display: none !important;
 }
 .pmp-select-wrap .aurel_select:hover,
 .pmp-select-wrap .aurel_select.open {
