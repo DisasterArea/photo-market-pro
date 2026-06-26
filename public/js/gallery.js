@@ -30,14 +30,19 @@ jQuery(function($){
         $sel.val( val ).trigger( 'change' );
     });
 
-    /* ── Chained: location changes → reload categories ─────── */
+    /* ── Chained: location changes → reload categories + auto filter ── */
     $( document ).on( 'change', '#pmp-f-location', function(){
         $( '#pmp-f-category' ).val('');
-        // Reset category aurel_select label too
         $( '#pmp-f-category' ).siblings( '.aurel_select' ).text(
             $( '#pmp-f-category option:first' ).text()
         );
         refreshOptions();
+        doFilter();
+    });
+
+    /* ── Auto filter on category / date change ──────────────── */
+    $( document ).on( 'change', '#pmp-f-category, #pmp-f-date-from, #pmp-f-date-to', function(){
+        doFilter();
     });
 
     /* ── Buttons ────────────────────────────────────────────── */
