@@ -49,18 +49,28 @@ jQuery(function($){
                 var curLoc = $( '#pmp-f-location' ).val();
                 var curCat = $( '#pmp-f-category' ).val();
 
-                // Rebuild location select
+                // Rebuild location select + aurel_select custom UI
                 var $loc = $( '#pmp-f-location' );
                 $loc.find( 'option:not(:first)' ).remove();
                 ( d.locations || [] ).forEach( function( l ) {
                     $loc.append( new Option( l, l, false, l === curLoc ) );
                 });
+                var $locUl = $loc.siblings( 'ul.select-options' );
+                $locUl.find( 'li:not(:first)' ).remove();
+                ( d.locations || [] ).forEach( function( l ) {
+                    $locUl.append( $( '<li>' ).attr( 'rel', l ).text( l ) );
+                });
 
-                // Rebuild category select
+                // Rebuild category select + aurel_select custom UI
                 var $cat = $( '#pmp-f-category' );
                 $cat.find( 'option:not(:first)' ).remove();
                 ( d.categories || [] ).forEach( function( c ) {
                     $cat.append( new Option( c, c, false, c === curCat ) );
+                });
+                var $catUl = $cat.siblings( 'ul.select-options' );
+                $catUl.find( 'li:not(:first)' ).remove();
+                ( d.categories || [] ).forEach( function( c ) {
+                    $catUl.append( $( '<li>' ).attr( 'rel', c ).text( c ) );
                 });
 
                 // Set date input limits if dates available
