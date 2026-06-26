@@ -7,8 +7,8 @@ jQuery(function($){
     if ( !$wrap.length ) return;
     var count = parseInt( $wrap.data('count') ) || 6;
 
-    /* ── Boot: load dropdowns immediately ─────────────────── */
-    refreshOptions();
+    /* ── Boot: load dropdowns after all scripts init ──────── */
+    jQuery( window ).on( 'load', function(){ refreshOptions(); } );
 
     /* ── Chained: location changes → reload categories ─────── */
     $( document ).on( 'change', '#pmp-f-location', function(){
