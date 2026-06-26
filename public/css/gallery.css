@@ -164,7 +164,6 @@ body input[type="date"].pmp-filter-select {
   -webkit-text-fill-color: #fff !important;
   font-size: 13px !important;
   line-height: normal !important;
-  margin: 0 !important;
   box-sizing: border-box !important;
   appearance: none;
   -webkit-appearance: none;
@@ -182,10 +181,7 @@ body input.pmp-filter-select:focus {
 
 .pmp-date-input {
   padding: 0 12px;
-}
-.pmp-date-input::placeholder {
-  color: #666;
-  opacity: 1;
+  color-scheme: dark;
 }
 
 .pmp-filter-btns {

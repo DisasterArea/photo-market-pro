@@ -30,8 +30,35 @@ class PMP_Public {
 
     private static function override_css() {
         return '
-#pmp-filters input[type="text"].pmp-date-input::placeholder {
-    color: #666 !important;
+#pmp-filters input[type="date"].pmp-filter-select,
+#pmp-filters input[type="date"].pmp-date-input {
+    height: 40px !important;
+    padding: 0 12px !important;
+    background: #2a2a2a !important;
+    border: 1px solid #2e2e2e !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    opacity: 1 !important;
+    color-scheme: dark !important;
+    font-size: 13px !important;
+    line-height: normal !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+#pmp-filters input[type="date"]::-webkit-datetime-edit,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-day-field,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-month-field,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-year-field {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    opacity: 1 !important;
+    background: transparent !important;
+}
+#pmp-filters input[type="date"]::-webkit-datetime-edit-text {
+    color: #aaa !important;
+    -webkit-text-fill-color: #aaa !important;
     opacity: 1 !important;
 }
 #pmp-filters .pmp-btn-reset {
@@ -86,11 +113,11 @@ class PMP_Public {
               </div>
               <div class="pmp-filter-group">
                 <label class="pmp-filter-label">📅 Dátumtól</label>
-                <input type="text" id="pmp-f-date-from" class="pmp-filter-select pmp-date-input" placeholder="ÉÉÉÉ-HH-NN" pattern="\d{4}-\d{2}-\d{2}">
+                <input type="date" id="pmp-f-date-from" class="pmp-filter-select pmp-date-input">
               </div>
               <div class="pmp-filter-group">
                 <label class="pmp-filter-label">📅 Dátumig</label>
-                <input type="text" id="pmp-f-date-to" class="pmp-filter-select pmp-date-input" placeholder="ÉÉÉÉ-HH-NN" pattern="\d{4}-\d{2}-\d{2}">
+                <input type="date" id="pmp-f-date-to" class="pmp-filter-select pmp-date-input">
               </div>
               <div class="pmp-filter-group pmp-filter-btns">
                 <button class="pmp-btn-reset" id="pmp-reset-filter">✕ Törlés</button>
