@@ -18,11 +18,52 @@ class PMP_Public {
 
     public static function enqueue_scripts() {
         wp_enqueue_style(  'pmp-public', PMP_URL . 'public/css/gallery.css', [], PMP_VERSION );
+        wp_add_inline_style( 'pmp-public', self::override_css() );
         wp_enqueue_script( 'pmp-public', PMP_URL . 'public/js/gallery.js', [ 'jquery' ], PMP_VERSION, true );
         wp_localize_script( 'pmp-public', 'PMP_Public', [
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'pmp_public_nonce' ),
         ] );
+    }
+
+    /* ── High-specificity inline CSS overrides ─────────────── */
+
+    private static function override_css() {
+        return '
+#pmp-filters input[type="date"].pmp-filter-select,
+#pmp-filters input[type="date"].pmp-date-input {
+    height: 40px !important;
+    padding: 0 12px !important;
+    background: #1e1e1e !important;
+    border: 1px solid #2e2e2e !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    margin: 0 !important;
+    line-height: normal !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+#pmp-filters .pmp-btn-reset {
+    height: 40px !important;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 1px solid #2e2e2e !important;
+    border-radius: 10px !important;
+    color: #888 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+}
+#pmp-filters .pmp-btn-reset:hover {
+    color: #fff !important;
+    border-color: #555 !important;
+    background: #1e1e1e !important;
+}
+        ';
     }
 
     /* ── Shortcode ──────────────────────────────────────────── */
