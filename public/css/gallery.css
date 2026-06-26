@@ -75,6 +75,11 @@
 .pmp-select-wrap {
   position: relative;
 }
+.pmp-select-wrap::after,
+.pmp-select-wrap::before {
+  display: none !important;
+  content: none !important;
+}
 
 /* aurel_select wrapper: match our input styling */
 .pmp-select-wrap .aurel_select_wrapper {
