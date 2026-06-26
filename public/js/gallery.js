@@ -77,12 +77,15 @@ jQuery(function($){
                 ( d.locations || [] ).forEach( function( l ) {
                     $loc.append( new Option( l, l, false, l === curLoc ) );
                 });
-                // Rebuild category select
+                pmpRebuildAurel( $loc, d.locations, curLoc );
+
+                // Rebuild category select + aurel_select custom UI
                 var $cat = $( '#pmp-f-category' );
                 $cat.find( 'option:not(:first)' ).remove();
                 ( d.categories || [] ).forEach( function( c ) {
                     $cat.append( new Option( c, c, false, c === curCat ) );
                 });
+                pmpRebuildAurel( $cat, d.categories, curCat );
 
                 // Set date input limits if dates available
                 if ( d.date_min ) $( '#pmp-f-date-from' ).attr( 'min', d.date_min );
@@ -93,6 +96,35 @@ jQuery(function($){
             }
         });
     }
+
+    /* ── aurel_select: rebuild custom <ul> after options change ─ */
+    function pmpRebuildAurel( $sel, items, curVal ) {
+        var $ul = $sel.siblings( 'ul.select-options' );
+        if ( ! $ul.length ) return;
+        $ul.find( 'li[data-pmp]' ).remove();
+        ( items || [] ).forEach( function( v ) {
+            var $li = $( '<li>' ).attr( 'rel', v ).attr( 'data-pmp', '1' ).text( v );
+            if ( v === curVal ) $li.addClass( 'selected' );
+            $ul.append( $li );
+        });
+        // Update visible label if value matches
+        if ( curVal ) $sel.siblings( '.aurel_select' ).text( curVal );
+    }
+
+    /* ── aurel_select: handle clicks on our dynamic items ───── */
+    $( document ).on( 'click', '.pmp-select-wrap ul.select-options li[data-pmp]', function(e) {
+        e.stopPropagation();
+        var $li  = $( this );
+        var val  = $li.attr( 'rel' );
+        var $sel = $li.closest( '.pmp-select-wrap' ).find( 'select' );
+        var $div = $li.closest( '.pmp-select-wrap' ).find( '.aurel_select' );
+        $li.siblings().removeClass( 'selected' );
+        $li.addClass( 'selected' );
+        $div.text( $li.text() );
+        $ul = $li.closest( 'ul' );
+        $ul.hide();
+        $sel.val( val ).trigger( 'change' );
+    });
 
     /* ── doFilter: reload masonry cards ────────────────────── */
     function doFilter() {
