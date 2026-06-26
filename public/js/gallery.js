@@ -45,8 +45,7 @@ jQuery(function($){
         doFilter();
     });
 
-    /* ── Buttons ────────────────────────────────────────────── */
-    $( document ).on( 'click', '#pmp-apply-filter', function(){ doFilter(); });
+    /* ── Reset button ───────────────────────────────────────── */
     $( document ).on( 'click', '#pmp-reset-filter', function(){
         $( '#pmp-f-location, #pmp-f-category' ).val('');
         $( '#pmp-f-date-from, #pmp-f-date-to' ).val('');
