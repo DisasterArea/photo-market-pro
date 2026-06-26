@@ -34,30 +34,34 @@ class PMP_Public {
 #pmp-filters input[type="date"].pmp-date-input {
     height: 40px !important;
     padding: 0 12px !important;
-    background: #1e1e1e !important;
+    background: #2a2a2a !important;
     border: 1px solid #2e2e2e !important;
     border-radius: 10px !important;
     color: #fff !important;
     -webkit-text-fill-color: #fff !important;
     opacity: 1 !important;
+    color-scheme: dark !important;
     font-size: 13px !important;
     margin: 0 !important;
     line-height: normal !important;
     box-sizing: border-box !important;
     width: 100% !important;
 }
-#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit,
-#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit { color: #fff !important; -webkit-text-fill-color: #fff !important; }
-#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-fields-wrapper,
-#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-fields-wrapper { color: #fff !important; -webkit-text-fill-color: #fff !important; }
-#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-text,
-#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-text { color: #aaa !important; -webkit-text-fill-color: #aaa !important; }
-#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-day-field,
-#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-month-field,
-#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-year-field,
-#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-day-field,
-#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-month-field,
-#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-year-field { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+#pmp-filters input[type="date"]::-webkit-datetime-edit,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-day-field,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-month-field,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-year-field {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    opacity: 1 !important;
+    background: transparent !important;
+}
+#pmp-filters input[type="date"]::-webkit-datetime-edit-text {
+    color: #aaa !important;
+    -webkit-text-fill-color: #aaa !important;
+    opacity: 1 !important;
+}
 #pmp-filters .pmp-btn-reset {
     height: 40px !important;
     padding: 0 16px !important;
@@ -76,6 +80,10 @@ class PMP_Public {
     color: #fff !important;
     border-color: #555 !important;
     background: #1e1e1e !important;
+}
+@media (max-width: 600px) {
+    .pmp-cta-text { display: none !important; }
+    .pmp-cta-icon { display: inline !important; }
 }
         ';
     }
@@ -163,7 +171,7 @@ class PMP_Public {
               <?php if ( $price > 0 ): ?>
                 <span class="pmp-card-price"><?php echo number_format( (float) $price, 0, ',', '.' ); ?> Ft</span>
               <?php endif; ?>
-              <span class="pmp-card-cta"><span class="pmp-cta-text">Megvásárolom &rarr;</span><span class="pmp-cta-icon">&#x1F6D2;</span></span>
+              <span class="pmp-card-cta"><span class="pmp-cta-text">Megvásárolom &rarr;</span><span class="pmp-cta-icon">🛒</span></span>
             </div>
           </a>
         </div>
