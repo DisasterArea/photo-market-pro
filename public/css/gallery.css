@@ -161,11 +161,14 @@
   border-radius: var(--pmp-radius) !important;
   color: #fff !important;
   font-size: 13px !important;
+  line-height: normal !important;
+  margin: 0 !important;
   box-sizing: border-box !important;
   appearance: none;
   -webkit-appearance: none;
   transition: border-color .2s;
   cursor: pointer;
+  vertical-align: top !important;
 }
 .pmp-filter-select:focus {
   outline: none !important;
@@ -181,7 +184,7 @@
 
 .pmp-filter-btns {
   flex: 0 0 auto;
-  align-self: flex-end;
+  align-self: center;
 }
 
 .pmp-btn-reset {
