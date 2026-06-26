@@ -35,7 +35,7 @@ jQuery(function($){
             url:  ajaxurl,
             type: 'POST',
             data: {
-                action:   'pmp_get_filter_options',
+                action: 'pmp_photo_gallery_options',
                 nonce:    nonce,
                 location: location,
                 category: category,
@@ -101,7 +101,7 @@ jQuery(function($){
             url:  ajaxurl,
             type: 'POST',
             data: {
-                action:    'pmp_filter_gallery',
+                action: 'pmp_photo_gallery_filter',
                 nonce:     nonce,
                 location:  location,
                 category:  category,
