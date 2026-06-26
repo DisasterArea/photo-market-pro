@@ -42,9 +42,8 @@ class PMP_Public {
     opacity: 1 !important;
     color-scheme: dark !important;
     font-size: 13px !important;
-    line-height: 40px !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+    line-height: normal !important;
+    padding: 10px 12px !important;
     box-sizing: border-box !important;
     width: 100% !important;
 }

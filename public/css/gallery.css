@@ -163,15 +163,13 @@ body input[type="date"].pmp-filter-select {
   color: #fff !important;
   -webkit-text-fill-color: #fff !important;
   font-size: 13px !important;
-  line-height: 40px !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  line-height: normal !important;
+  padding: 10px 12px !important;
   box-sizing: border-box !important;
   appearance: none;
   -webkit-appearance: none;
   transition: border-color .2s;
   cursor: pointer;
-  vertical-align: top !important;
 }
 body .pmp-gallery-wrap .pmp-filter-select:focus,
 body input.pmp-filter-select:focus {
