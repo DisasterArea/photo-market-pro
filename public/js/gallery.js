@@ -7,27 +7,23 @@ jQuery(function($){
     if ( !$wrap.length ) return;
     var count = parseInt( $wrap.data('count') ) || 6;
 
-    /* ── Boot: load dropdowns after all scripts init ──────── */
-    jQuery( window ).on( 'load', function(){ refreshOptions(); } );
+    /* ── Boot: load dropdowns ──────────────────────── */
+    refreshOptions();
 
-    /* ── aurel_select: handle clicks on our dynamic <li> items ─ */
-    $( document ).on( 'click', '.pmp-select-wrap ul.select-options li[data-pmp]', function(e) {
+    /* ── Clickable card tags ────────────────────────── */
+    $( document ).on( 'click', '.pmp-tag[data-filter]', function(e) {
+        e.preventDefault();
         e.stopPropagation();
-        var $li   = $( this );
-        var val   = $li.attr( 'rel' );
-        var $wrap = $li.closest( '.pmp-select-wrap' );
-        var $sel  = $wrap.find( 'select' );
-        var $div  = $wrap.find( '.aurel_select' );
-
-        // Deselect siblings, mark this one active
-        $li.siblings().removeClass( 'selected' );
-        $li.addClass( 'selected' );
-
-        // Update the visible label
-        $div.text( $li.text() );
-
-        // Update hidden select and fire change (without re-triggering AJAX loop)
-        $sel.val( val ).trigger( 'change' );
+        var type = $( this ).data('filter');
+        var val  = $( this ).data('value');
+        if ( type === 'location' ) $( '#pmp-f-location' ).val( val ).trigger('change');
+        if ( type === 'category' ) $( '#pmp-f-category' ).val( val ).trigger('change');
+        if ( type === 'date' ) {
+            $( '#pmp-f-date-from' ).val( val );
+            $( '#pmp-f-date-to'   ).val( val );
+            doFilter();
+        }
+        $( 'html, body' ).animate({ scrollTop: $( '#pmp-filters' ).offset().top - 20 }, 300 );
     });
 
     /* ── Chained: location changes → reload categories + auto filter ── */
@@ -49,7 +45,6 @@ jQuery(function($){
     $( document ).on( 'click', '#pmp-reset-filter', function(){
         $( '#pmp-f-location, #pmp-f-category' ).val('');
         $( '#pmp-f-date-from, #pmp-f-date-to' ).val('');
-        // Reset aurel_select labels
         $( '#pmp-f-location' ).siblings( '.aurel_select' ).text(
             $( '#pmp-f-location option:first' ).text()
         );
@@ -90,13 +85,7 @@ jQuery(function($){
                 ( d.locations || [] ).forEach( function( l ) {
                     $loc.append( new Option( l, l, false, l === curLoc ) );
                 });
-                var $locUl = $loc.siblings( 'ul.select-options' );
-                $locUl.find( 'li[data-pmp]' ).remove();
-                ( d.locations || [] ).forEach( function( l ) {
-                    var $li = $( '<li>' ).attr( 'rel', l ).attr( 'data-pmp', '1' ).text( l );
-                    if ( l === curLoc ) $li.addClass( 'selected' );
-                    $locUl.append( $li );
-                });
+                pmpRebuildAurel( $loc, d.locations, curLoc );
 
                 // Rebuild category select + aurel_select custom UI
                 var $cat = $( '#pmp-f-category' );
@@ -104,13 +93,7 @@ jQuery(function($){
                 ( d.categories || [] ).forEach( function( c ) {
                     $cat.append( new Option( c, c, false, c === curCat ) );
                 });
-                var $catUl = $cat.siblings( 'ul.select-options' );
-                $catUl.find( 'li[data-pmp]' ).remove();
-                ( d.categories || [] ).forEach( function( c ) {
-                    var $li = $( '<li>' ).attr( 'rel', c ).attr( 'data-pmp', '1' ).text( c );
-                    if ( c === curCat ) $li.addClass( 'selected' );
-                    $catUl.append( $li );
-                });
+                pmpRebuildAurel( $cat, d.categories, curCat );
 
                 // Set date input limits if dates available
                 if ( d.date_min ) $( '#pmp-f-date-from' ).attr( 'min', d.date_min );
@@ -122,6 +105,34 @@ jQuery(function($){
         });
     }
 
+    /* ── aurel_select: rebuild custom <ul> after options change ─ */
+    function pmpRebuildAurel( $sel, items, curVal ) {
+        var $ul = $sel.siblings( 'ul.select-options' );
+        if ( ! $ul.length ) return;
+        $ul.find( 'li[data-pmp]' ).remove();
+        ( items || [] ).forEach( function( v ) {
+            var $li = $( '<li>' ).attr( 'rel', v ).attr( 'data-pmp', '1' ).text( v );
+            if ( v === curVal ) $li.addClass( 'selected' );
+            $ul.append( $li );
+        });
+        if ( curVal ) $sel.siblings( '.aurel_select' ).text( curVal );
+    }
+
+    /* ── aurel_select: handle clicks on our dynamic items ───── */
+    $( document ).on( 'click', '.pmp-select-wrap ul.select-options li[data-pmp]', function(e) {
+        e.stopPropagation();
+        var $li  = $( this );
+        var val  = $li.attr( 'rel' );
+        var $sel = $li.closest( '.pmp-select-wrap' ).find( 'select' );
+        var $div = $li.closest( '.pmp-select-wrap' ).find( '.aurel_select' );
+        $li.siblings().removeClass( 'selected' );
+        $li.addClass( 'selected' );
+        $div.text( $li.text() );
+        $ul = $li.closest( 'ul' );
+        $ul.hide();
+        $sel.val( val ).trigger( 'change' );
+    });
+
     /* ── doFilter: reload masonry cards ────────────────────── */
     function doFilter() {
         var location  = $( '#pmp-f-location'  ).val() || '';
@@ -129,7 +140,6 @@ jQuery(function($){
         var dateFrom  = $( '#pmp-f-date-from' ).val() || '';
         var dateTo    = $( '#pmp-f-date-to'   ).val() || '';
 
-        // Show active filter tags
         var tags = [];
         if ( location ) tags.push( '📍 ' + location );
         if ( category ) tags.push( '🏷 ' + category );

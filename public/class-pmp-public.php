@@ -18,11 +18,70 @@ class PMP_Public {
 
     public static function enqueue_scripts() {
         wp_enqueue_style(  'pmp-public', PMP_URL . 'public/css/gallery.css', [], PMP_VERSION );
+        wp_add_inline_style( 'pmp-public', self::override_css() );
         wp_enqueue_script( 'pmp-public', PMP_URL . 'public/js/gallery.js', [ 'jquery' ], PMP_VERSION, true );
         wp_localize_script( 'pmp-public', 'PMP_Public', [
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'pmp_public_nonce' ),
         ] );
+    }
+
+    /* ── High-specificity inline CSS overrides ─────────────── */
+
+    private static function override_css() {
+        return '
+#pmp-filters input[type="date"].pmp-filter-select,
+#pmp-filters input[type="date"].pmp-date-input {
+    height: 40px !important;
+    padding: 0 12px !important;
+    background: #2a2a2a !important;
+    border: 1px solid #2e2e2e !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    opacity: 1 !important;
+    color-scheme: dark !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    padding: 0 12px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+#pmp-filters input[type="date"]::-webkit-datetime-edit,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-day-field,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-month-field,
+#pmp-filters input[type="date"]::-webkit-datetime-edit-year-field {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    opacity: 1 !important;
+    background: transparent !important;
+}
+#pmp-filters input[type="date"]::-webkit-datetime-edit-text {
+    color: #aaa !important;
+    -webkit-text-fill-color: #aaa !important;
+    opacity: 1 !important;
+}
+#pmp-filters .pmp-btn-reset {
+    height: 40px !important;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 1px solid #2e2e2e !important;
+    border-radius: 10px !important;
+    color: #888 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+}
+#pmp-filters .pmp-btn-reset:hover {
+    color: #fff !important;
+    border-color: #555 !important;
+    background: #1e1e1e !important;
+}
+        ';
     }
 
     /* ── Shortcode ──────────────────────────────────────────── */
@@ -41,7 +100,7 @@ class PMP_Public {
                 <label class="pmp-filter-label">📍 Helyszín</label>
                 <div class="pmp-select-wrap">
                   <select id="pmp-f-location" class="pmp-filter-select">
-                    <option value="">Minden helyszín</option>
+                    <option value="">Válassz</option>
                   </select>
                 </div>
               </div>
@@ -49,7 +108,7 @@ class PMP_Public {
                 <label class="pmp-filter-label">🏷 Kategória</label>
                 <div class="pmp-select-wrap">
                   <select id="pmp-f-category" class="pmp-filter-select">
-                    <option value="">Minden kategória</option>
+                    <option value="">Válassz</option>
                   </select>
                 </div>
               </div>
@@ -99,16 +158,16 @@ class PMP_Public {
             <?php endif; ?>
             <div class="pmp-card-overlay">
               <div class="pmp-card-tags">
-                <?php if ( $photo['location'] ): ?><span class="pmp-tag">📍 <?php echo esc_html( $photo['location'] ); ?></span><?php endif; ?>
-                <?php if ( $photo['category'] ): ?><span class="pmp-tag">🏷 <?php echo esc_html( $photo['category'] ); ?></span><?php endif; ?>
-                <?php if ( $photo['shot_date'] ): ?><span class="pmp-tag">📅 <?php echo esc_html( date_i18n( 'Y.m.d', strtotime( $photo['shot_date'] ) ) ); ?></span><?php endif; ?>
+                <?php if ( $photo['location'] ): ?><span class="pmp-tag" data-filter="location" data-value="<?php echo esc_attr( $photo['location'] ); ?>" title="Szűrés helyszínre">📍 <?php echo esc_html( $photo['location'] ); ?></span><?php endif; ?>
+                <?php if ( $photo['category'] ): ?><span class="pmp-tag" data-filter="category" data-value="<?php echo esc_attr( $photo['category'] ); ?>" title="Szűrés kategóriára">🏷 <?php echo esc_html( $photo['category'] ); ?></span><?php endif; ?>
+                <?php if ( $photo['shot_date'] ): ?><span class="pmp-tag" data-filter="date" data-value="<?php echo esc_attr( $photo['shot_date'] ); ?>" title="Szűrés dátumra">📅 <?php echo esc_html( date_i18n( 'Y.m.d', strtotime( $photo['shot_date'] ) ) ); ?></span><?php endif; ?>
               </div>
-              <div class="pmp-card-bottom">
-                <?php if ( $price > 0 ): ?>
-                  <span class="pmp-card-price"><?php echo number_format( (float) $price, 0, ',', '.' ); ?> Ft</span>
-                <?php endif; ?>
-                <span class="pmp-card-cta">Megvásárolom →</span>
-              </div>
+            </div>
+            <div class="pmp-card-bottom">
+              <?php if ( $price > 0 ): ?>
+                <span class="pmp-card-price"><?php echo number_format( (float) $price, 0, ',', '.' ); ?> Ft</span>
+              <?php endif; ?>
+              <span class="pmp-card-cta">🛒</span>
             </div>
           </a>
         </div>
