@@ -62,6 +62,7 @@ class PMP_Public {
                 <input type="date" id="pmp-f-date-to" class="pmp-filter-select pmp-date-input">
               </div>
               <div class="pmp-filter-group pmp-filter-btns">
+                <label class="pmp-filter-label" aria-hidden="true">&nbsp;</label>
                 <button class="pmp-btn-reset" id="pmp-reset-filter">✕ Törlés</button>
               </div>
             </div>
@@ -99,9 +100,9 @@ class PMP_Public {
             <?php endif; ?>
             <div class="pmp-card-overlay">
               <div class="pmp-card-tags">
-                <?php if ( $photo['location'] ): ?><span class="pmp-tag">📍 <?php echo esc_html( $photo['location'] ); ?></span><?php endif; ?>
-                <?php if ( $photo['category'] ): ?><span class="pmp-tag">🏷 <?php echo esc_html( $photo['category'] ); ?></span><?php endif; ?>
-                <?php if ( $photo['shot_date'] ): ?><span class="pmp-tag">📅 <?php echo esc_html( date_i18n( 'Y.m.d', strtotime( $photo['shot_date'] ) ) ); ?></span><?php endif; ?>
+                <?php if ( $photo['location'] ): ?><span class="pmp-tag" data-filter="location" data-value="<?php echo esc_attr( $photo['location'] ); ?>" title="Szűrés helyszínre">📍 <?php echo esc_html( $photo['location'] ); ?></span><?php endif; ?>
+                <?php if ( $photo['category'] ): ?><span class="pmp-tag" data-filter="category" data-value="<?php echo esc_attr( $photo['category'] ); ?>" title="Szűrés kategóriára">🏷 <?php echo esc_html( $photo['category'] ); ?></span><?php endif; ?>
+                <?php if ( $photo['shot_date'] ): ?><span class="pmp-tag" data-filter="date" data-value="<?php echo esc_attr( $photo['shot_date'] ); ?>" title="Szűrés dátumra">📅 <?php echo esc_html( date_i18n( 'Y.m.d', strtotime( $photo['shot_date'] ) ) ); ?></span><?php endif; ?>
               </div>
             </div>
             <div class="pmp-card-bottom">

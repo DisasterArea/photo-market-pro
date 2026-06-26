@@ -7,12 +7,24 @@ jQuery(function($){
     if ( !$wrap.length ) return;
     var count = parseInt( $wrap.data('count') ) || 6;
 
-    /* ── Boot: load dropdowns (handle already-fired window.load) ── */
-    if ( document.readyState === 'complete' ) {
-        refreshOptions();
-    } else {
-        jQuery( window ).on( 'load', refreshOptions );
-    }
+    /* ── Boot: load dropdowns ──────────────────────── */
+    refreshOptions();
+
+    /* ── Clickable card tags ────────────────────────── */
+    $( document ).on( 'click', '.pmp-tag[data-filter]', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var type = $( this ).data('filter');
+        var val  = $( this ).data('value');
+        if ( type === 'location' ) $( '#pmp-f-location' ).val( val ).trigger('change');
+        if ( type === 'category' ) $( '#pmp-f-category' ).val( val ).trigger('change');
+        if ( type === 'date' ) {
+            $( '#pmp-f-date-from' ).val( val );
+            $( '#pmp-f-date-to'   ).val( val );
+            doFilter();
+        }
+        $( 'html, body' ).animate({ scrollTop: $( '#pmp-filters' ).offset().top - 20 }, 300 );
+    });
 
     /* ── Chained: location changes → reload categories + auto filter ── */
     $( document ).on( 'change', '#pmp-f-location', function(){
