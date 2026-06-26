@@ -153,22 +153,24 @@
 }
 
 .pmp-filter-select {
-  width: 100%;
-  height: 40px;
-  padding: 0 32px 0 12px;
-  background: var(--pmp-surface);
-  border: 1px solid var(--pmp-border);
-  border-radius: var(--pmp-radius);
-  color: #fff;
-  font-size: 13px;
+  width: 100% !important;
+  height: 40px !important;
+  padding: 0 32px 0 12px !important;
+  background: var(--pmp-surface) !important;
+  border: 1px solid var(--pmp-border) !important;
+  border-radius: var(--pmp-radius) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
   appearance: none;
   -webkit-appearance: none;
   transition: border-color .2s;
   cursor: pointer;
 }
 .pmp-filter-select:focus {
-  outline: none;
-  border-color: var(--pmp-accent);
+  outline: none !important;
+  border-color: var(--pmp-accent) !important;
+  box-shadow: none !important;
 }
 .pmp-filter-select option { background: #1e1e1e; color: #fff; }
 
