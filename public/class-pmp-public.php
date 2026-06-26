@@ -103,12 +103,12 @@ class PMP_Public {
                 <?php if ( $photo['category'] ): ?><span class="pmp-tag">🏷 <?php echo esc_html( $photo['category'] ); ?></span><?php endif; ?>
                 <?php if ( $photo['shot_date'] ): ?><span class="pmp-tag">📅 <?php echo esc_html( date_i18n( 'Y.m.d', strtotime( $photo['shot_date'] ) ) ); ?></span><?php endif; ?>
               </div>
-              <div class="pmp-card-bottom">
-                <?php if ( $price > 0 ): ?>
-                  <span class="pmp-card-price"><?php echo number_format( (float) $price, 0, ',', '.' ); ?> Ft</span>
-                <?php endif; ?>
-                <span class="pmp-card-cta">Megvásárolom →</span>
-              </div>
+            </div>
+            <div class="pmp-card-bottom">
+              <?php if ( $price > 0 ): ?>
+                <span class="pmp-card-price"><?php echo number_format( (float) $price, 0, ',', '.' ); ?> Ft</span>
+              <?php endif; ?>
+              <span class="pmp-card-cta">Megvásárolom →</span>
             </div>
           </a>
         </div>
