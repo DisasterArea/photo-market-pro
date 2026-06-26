@@ -38,12 +38,25 @@ class PMP_Public {
     border: 1px solid #2e2e2e !important;
     border-radius: 10px !important;
     color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
     font-size: 13px !important;
     margin: 0 !important;
     line-height: normal !important;
     box-sizing: border-box !important;
     width: 100% !important;
 }
+#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit,
+#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-fields-wrapper,
+#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-fields-wrapper { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-text,
+#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-text { color: #aaa !important; -webkit-text-fill-color: #aaa !important; }
+#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-day-field,
+#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-month-field,
+#pmp-filters input[type="date"].pmp-filter-select::-webkit-datetime-edit-year-field,
+#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-day-field,
+#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-month-field,
+#pmp-filters input[type="date"].pmp-date-input::-webkit-datetime-edit-year-field { color: #fff !important; -webkit-text-fill-color: #fff !important; }
 #pmp-filters .pmp-btn-reset {
     height: 40px !important;
     padding: 0 16px !important;
