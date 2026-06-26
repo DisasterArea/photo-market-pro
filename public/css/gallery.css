@@ -34,7 +34,7 @@
 
 .pmp-filter-row {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -90,23 +90,25 @@
 /* aurel_select wrapper: match our input styling */
 .pmp-select-wrap .aurel_select_wrapper {
   min-width: 0 !important;
-  width: 100%;
+  width: 100% !important;
 }
 .pmp-select-wrap .aurel_select {
-  height: 40px;
-  line-height: 40px;
-  padding: 0 32px 0 12px;
-  background: var(--pmp-surface);
-  border: 1px solid var(--pmp-border);
-  border-radius: var(--pmp-radius);
-  color: #fff;
-  font-size: 13px;
+  height: 40px !important;
+  line-height: 40px !important;
+  padding: 0 32px 0 12px !important;
+  background: var(--pmp-surface) !important;
+  border: 1px solid var(--pmp-border) !important;
+  border-radius: var(--pmp-radius) !important;
+  color: #fff !important;
+  font-size: 13px !important;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: border-color .2s;
   position: relative;
+  box-sizing: border-box !important;
+  margin: 0 !important;
 }
 .pmp-select-wrap .aurel_select::after {
   content: '▾';
@@ -177,7 +179,7 @@
 
 .pmp-filter-btns {
   flex: 0 0 auto;
-  padding-top: 22px; /* matches label height + gap so button aligns with inputs */
+  align-self: flex-end;
 }
 
 .pmp-btn-reset {
