@@ -364,8 +364,16 @@ body input.pmp-filter-select:focus {
   white-space: nowrap;
   letter-spacing: .03em;
   transition: background .2s;
+  display: inline-flex;
+  align-items: center;
 }
 .pmp-card:hover .pmp-card-cta { background: var(--pmp-accent2); }
+.pmp-cta-icon { display: none; font-style: normal; }
+@media (max-width: 600px) {
+  .pmp-cta-text { display: none; }
+  .pmp-cta-icon { display: inline; }
+  .pmp-card-cta { padding: 5px 8px; font-size: 14px; }
+}
 
 /* ── Loading ──────────────────────────────────────── */
 .pmp-gallery-loading {

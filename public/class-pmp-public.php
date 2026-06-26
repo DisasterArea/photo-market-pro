@@ -39,6 +39,7 @@ class PMP_Public {
     border-radius: 10px !important;
     color: #fff !important;
     -webkit-text-fill-color: #fff !important;
+    opacity: 1 !important;
     font-size: 13px !important;
     margin: 0 !important;
     line-height: normal !important;
@@ -162,7 +163,7 @@ class PMP_Public {
               <?php if ( $price > 0 ): ?>
                 <span class="pmp-card-price"><?php echo number_format( (float) $price, 0, ',', '.' ); ?> Ft</span>
               <?php endif; ?>
-              <span class="pmp-card-cta">Megvásárolom →</span>
+              <span class="pmp-card-cta"><span class="pmp-cta-text">Megvásárolom &rarr;</span><span class="pmp-cta-icon">&#x1F6D2;</span></span>
             </div>
           </a>
         </div>
