@@ -133,6 +133,13 @@ jQuery(function($){
         $sel.val( val ).trigger( 'change' );
     });
 
+    /* ── Format date YYYY-MM-DD → DD/MM/YYYY ───────────────── */
+    function pmpFmtDate( d ) {
+        if ( !d ) return d;
+        var p = d.split('-');
+        return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : d;
+    }
+
     /* ── doFilter: reload masonry cards ────────────────────── */
     function doFilter() {
         var location  = $( '#pmp-f-location'  ).val() || '';
@@ -143,8 +150,8 @@ jQuery(function($){
         var tags = [];
         if ( location ) tags.push( '📍 ' + location );
         if ( category ) tags.push( '🏷 ' + category );
-        if ( dateFrom ) tags.push( 'Dal: ' + dateFrom );
-        if ( dateTo   ) tags.push( 'Al: '  + dateTo );
+        if ( dateFrom ) tags.push( 'Dal: ' + pmpFmtDate( dateFrom ) );
+        if ( dateTo   ) tags.push( 'Al: '  + pmpFmtDate( dateTo ) );
 
         var $af = $( '#pmp-active-filters' );
         if ( tags.length ) {
