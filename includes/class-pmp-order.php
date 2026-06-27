@@ -4,22 +4,63 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class PMP_Order {
 
     public static function init() {
-        add_action( 'woocommerce_order_status_completed', [ __CLASS__, 'handle_completed_order' ] );
-        add_filter( 'woocommerce_email_classes', [ __CLASS__, 'register_email' ] );
-        add_action( 'add_meta_boxes', [ __CLASS__, 'register_order_meta_box' ] );
-        // Suppress WC's own "completed order" email for PMP orders – we send our own
-        add_filter( 'woocommerce_email_enabled_customer_completed_order', [ __CLASS__, 'suppress_wc_completed_email' ], 10, 2 );
+        add_action( 'woocommerce_order_status_completed',  [ __CLASS__, 'handle_completed_order' ] );
+        add_action( 'woocommerce_order_status_processing', [ __CLASS__, 'maybe_auto_complete' ] );
+        add_filter( 'woocommerce_email_classes',           [ __CLASS__, 'register_email' ] );
+        add_action( 'add_meta_boxes',                      [ __CLASS__, 'register_order_meta_box' ] );
+        add_action( 'woocommerce_email_after_order_table', [ __CLASS__, 'inject_download_links_email' ], 10, 4 );
     }
 
-    public static function suppress_wc_completed_email( $enabled, $order ) {
-        if ( ! $order ) return $enabled;
+    /* Auto-complete orders with no editing options */
+    public static function maybe_auto_complete( $order_id ) {
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) return;
+
+        $has_pmp   = false;
+        $has_edits = false;
+
         foreach ( $order->get_items() as $item ) {
             $product = $item->get_product();
-            if ( $product && $product->get_meta( '_pmp_photo' ) ) {
-                return false;
+            if ( ! $product || ! $product->get_meta( '_pmp_photo' ) ) continue;
+            $has_pmp = true;
+            if ( $item->get_meta( '_pmp_edit_option_ids' ) ) {
+                $has_edits = true;
+                break;
             }
         }
-        return $enabled;
+
+        if ( $has_pmp && ! $has_edits ) {
+            $order->update_status( 'completed' );
+        }
+    }
+
+    /* Inject download links into WC completed order email */
+    public static function inject_download_links_email( $order, $sent_to_admin, $plain_text, $email ) {
+        if ( $sent_to_admin || $plain_text ) return;
+        if ( ! $email instanceof WC_Email || $email->id !== 'customer_completed_order' ) return;
+
+        $tokens = get_post_meta( $order->get_id(), '_pmp_tokens_data', true );
+        if ( empty( $tokens ) ) return;
+
+        $expiry_h = get_option( 'pmp_download_expiry_hours', 48 );
+        $max_dl   = get_option( 'pmp_download_max_count', 3 );
+
+        echo '<h2 style="color:#333;font-size:16px;margin:32px 0 12px;">📥 Link per il download delle foto</h2>';
+
+        foreach ( $tokens as $t ) {
+            $label = ! empty( $t['label'] ) && $t['label'] !== 'Eredeti' ? ' – ' . esc_html( $t['label'] ) : '';
+            echo '<table cellspacing="0" cellpadding="0" style="width:100%;border:1px solid #e0e0e0;border-radius:6px;margin:10px 0;">';
+            echo '<tr><td style="padding:16px 20px;">';
+            echo '<strong style="font-size:15px;color:#333;">' . esc_html( $t['photo_title'] ) . '<span style="font-weight:normal;color:#888;font-size:13px;">' . $label . '</span></strong><br>';
+            echo '<span style="color:#777;font-size:13px;">⏱ Valido per: ' . intval( $expiry_h ) . ' ore &nbsp;|&nbsp; 📥 Download massimi: ' . intval( $max_dl ) . '</span><br><br>';
+            echo '<a href="' . esc_url( $t['download_url'] ) . '" style="display:inline-block;padding:10px 24px;background:#e8a020;color:#ffffff;text-decoration:none;border-radius:4px;font-weight:700;font-size:14px;">Scarica la foto &rarr;</a>';
+            echo '</td></tr></table>';
+        }
+
+        echo '<table cellspacing="0" cellpadding="0" style="width:100%;margin:24px 0 0;">';
+        echo '<tr><td style="padding:14px 18px;background:#fff8e1;border-left:4px solid #f0a500;border-radius:0 4px 4px 0;font-size:13px;color:#555;">';
+        echo '⚠️ <strong>Attenzione:</strong> I link scadono dopo <strong>' . intval( $expiry_h ) . ' ore</strong> e possono essere utilizzati al massimo <strong>' . intval( $max_dl ) . ' volte</strong>. Salva le foto subito dopo il download. Per assistenza contattaci.';
+        echo '</td></tr></table>';
     }
 
     /**
@@ -87,7 +128,6 @@ class PMP_Order {
         if ( empty( $tokens_created ) ) return;
 
         update_post_meta( $order_id, '_pmp_tokens_data', $tokens_created );
-        self::send_download_email( $order, $tokens_created );
         update_post_meta( $order_id, '_pmp_tokens_sent', true );
     }
 
