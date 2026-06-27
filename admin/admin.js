@@ -254,8 +254,9 @@ jQuery(function($){
                     updateProgress();
                     return;
                 }
-                var putUrl = res.data.put_url;
-                var r2Key  = res.data.r2_key;
+                var putUrl     = res.data.put_url;
+                var r2Key      = res.data.r2_key;
+                var previewUrl = res.data.preview_url || '';
 
                 // Step 2: PUT directly to R2 from browser
                 var xhr = new XMLHttpRequest();
@@ -270,6 +271,7 @@ jQuery(function($){
                         saveData.append('bulk_price',   price);
                         saveData.append('file_name',    file.name);
                         saveData.append('r2_key',       r2Key);
+                        saveData.append('preview_url',  previewUrl);
                         optIds.forEach(function(id){ saveData.append('bulk_edit_options[]', id); });
                         $.ajax({
                             url: ajaxurl, type: 'POST', data: saveData,

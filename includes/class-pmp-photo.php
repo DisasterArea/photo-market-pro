@@ -139,15 +139,16 @@ class PMP_Photo {
     public static function save( $data, $photo_id = 0 ) {
         global $wpdb;
 
-        $location   = sanitize_text_field( $data['location'] ?? '' );
-        $category   = sanitize_text_field( $data['category'] ?? '' );
-        $shot_date  = sanitize_text_field( $data['shot_date'] ?? '' );
-        $price      = floatval( str_replace( ',', '.', $data['price'] ?? 0 ) );
-        $img_id     = intval( $data['preview_image_id'] ?? 0 );
-        $use_ext    = intval( $data['use_external'] ?? 0 );
-        $ext_key    = sanitize_text_field( $data['external_key'] ?? '' );
-        $dl_url     = esc_url_raw( $data['download_url'] ?? '' );
-        $opt_ids    = array_map( 'intval', (array)( $data['edit_option_ids'] ?? [] ) );
+        $location    = sanitize_text_field( $data['location'] ?? '' );
+        $category    = sanitize_text_field( $data['category'] ?? '' );
+        $shot_date   = sanitize_text_field( $data['shot_date'] ?? '' );
+        $price       = floatval( str_replace( ',', '.', $data['price'] ?? 0 ) );
+        $img_id      = intval( $data['preview_image_id'] ?? 0 );
+        $preview_url = esc_url_raw( $data['preview_url'] ?? '' );
+        $use_ext     = intval( $data['use_external'] ?? 0 );
+        $ext_key     = sanitize_text_field( $data['external_key'] ?? '' );
+        $dl_url      = esc_url_raw( $data['download_url'] ?? '' );
+        $opt_ids     = array_map( 'intval', (array)( $data['edit_option_ids'] ?? [] ) );
 
         // Title: always auto-generate from location + date + sequence
         $title = self::generate_title( $location, $shot_date, $photo_id );
@@ -203,6 +204,7 @@ class PMP_Photo {
             'category'         => $category,
             'shot_date'        => $shot_date ?: null,
             'preview_image_id' => $img_id ?: null,
+            'preview_url'      => $preview_url ?: null,
             'use_external'     => $use_ext,
             'external_key'     => $ext_key,
             'download_url'     => $dl_url,

@@ -268,7 +268,14 @@ class PMP_Admin {
             wp_send_json_error( 'R2 nincs konfigurálva.' );
         }
 
-        wp_send_json_success( [ 'put_url' => $put_url, 'r2_key' => $r2_key ] );
+        // Generate a long-lived presigned GET URL for use as admin preview thumbnail
+        $preview_url = PMP_R2::presigned_url( $r2_key, 365 * 24 * 3600 );
+
+        wp_send_json_success( [
+            'put_url'     => $put_url,
+            'r2_key'      => $r2_key,
+            'preview_url' => $preview_url ?: '',
+        ] );
     }
 
     /**
@@ -288,33 +295,64 @@ class PMP_Admin {
             wp_send_json_error( 'Hiányzó fájlnév vagy R2 kulcs.' );
         }
 
+        $preview_url = sanitize_text_field( $_POST['preview_url'] ?? '' );
+
         $filename  = pathinfo( $file_name, PATHINFO_FILENAME );
         $parts     = explode( '_', $filename );
-        $location  = isset( $parts[0] ) ? ucfirst( str_replace( '-', ' ', $parts[0] ) ) : '';
-        $category  = isset( $parts[1] ) ? ucfirst( str_replace( '-', ' ', $parts[1] ) ) : '';
-        $date_raw  = $parts[2] ?? '';
+
+        // Filename format: location_category_DDMMYYYY_seq  OR  location_DDMMYYYY_seq
+        // Detect which part is the date (8 digits)
+        $location  = '';
+        $category  = '';
         $shot_date = '';
-        if ( preg_match( '/^(\d{4})(\d{2})(\d{2})$/', $date_raw, $m ) ) {
-            $shot_date = "{$m[1]}-{$m[2]}-{$m[3]}";
-        } elseif ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_raw ) ) {
-            $shot_date = $date_raw;
+        foreach ( $parts as $i => $part ) {
+            if ( preg_match( '/^(\d{2})(\d{2})(\d{4})$/', $part, $m ) ) {
+                // Italian date format DDMMYYYY
+                $shot_date = "{$m[3]}-{$m[2]}-{$m[1]}";
+                $location  = isset( $parts[0] ) ? ucfirst( str_replace( '-', ' ', $parts[0] ) ) : '';
+                $category  = $i >= 2 ? ucfirst( str_replace( '-', ' ', $parts[1] ) ) : '';
+                break;
+            } elseif ( preg_match( '/^(\d{4})(\d{2})(\d{2})$/', $part, $m ) ) {
+                // Legacy YYYYMMDD format
+                $shot_date = "{$m[1]}-{$m[2]}-{$m[3]}";
+                $location  = isset( $parts[0] ) ? ucfirst( str_replace( '-', ' ', $parts[0] ) ) : '';
+                $category  = $i >= 2 ? ucfirst( str_replace( '-', ' ', $parts[1] ) ) : '';
+                break;
+            }
+        }
+        if ( ! $location ) {
+            $location = ucfirst( str_replace( '-', ' ', $parts[0] ?? '' ) );
         }
 
         $photo_id = PMP_Photo::save( [
-            'location'        => $location,
-            'category'        => $category,
-            'shot_date'       => $shot_date,
-            'price'           => $price,
-            'preview_image_id'=> 0,
-            'use_external'    => 1,
-            'external_key'    => $r2_key,
-            'download_url'    => '',
-            'edit_option_ids' => $opt_ids,
+            'location'         => $location,
+            'category'         => $category,
+            'shot_date'        => $shot_date,
+            'price'            => $price,
+            'preview_image_id' => 0,
+            'preview_url'      => $preview_url,
+            'use_external'     => 1,
+            'external_key'     => $r2_key,
+            'download_url'     => '',
+            'edit_option_ids'  => $opt_ids,
         ] );
 
         if ( ! $photo_id ) {
             wp_send_json_error( 'Adatbázis mentési hiba.' );
         }
+
+        // Create a long-lived download token for admin access
+        global $wpdb;
+        $secure_token = bin2hex( random_bytes( 32 ) );
+        $wpdb->insert( $wpdb->prefix . 'pmp_download_tokens', [
+            'token'          => $secure_token,
+            'order_id'       => 0,
+            'order_item_id'  => 0,
+            'photo_id'       => $photo_id,
+            'customer_email' => 'import@system.local',
+            'expires_at'     => gmdate( 'Y-m-d H:i:s', time() + 315360000 ),
+            'max_downloads'  => 20,
+        ] );
 
         wp_send_json_success( [ 'photo_id' => $photo_id ] );
     }

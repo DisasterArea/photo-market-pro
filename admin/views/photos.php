@@ -47,7 +47,15 @@
     <div class="pmp-photo-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:20px;">
         <?php if ( ! empty( $photos ) ) : ?>
             <?php foreach ( $photos as $p ) : ?>
-                <?php $thumb = $p['preview_image_id'] ? wp_get_attachment_image_url( $p['preview_image_id'], 'medium' ) : ''; ?>
+                <?php
+                $thumb = '';
+                if ( $p['preview_image_id'] ) {
+                    $thumb = wp_get_attachment_image_url( (int) $p['preview_image_id'], 'medium' );
+                }
+                if ( ! $thumb && ! empty( $p['preview_url'] ) ) {
+                    $thumb = $p['preview_url'];
+                }
+                ?>
                 <div class="pmp-photo-card" id="photo-card-<?php echo esc_attr($p['id']); ?>" style="background:#fff; border:1px solid #ccd0d4; border-radius:6px; padding:10px; position:relative; display:flex; flex-direction:column; justify-content:space-between;">
                     <input type="checkbox" class="pmp-photo-selector" value="<?php echo esc_attr($p['id']); ?>" style="position:absolute; top:15px; left:15px; z-index:10; transform: scale(1.2); cursor:pointer;">
                     <div style="height:140px; background:#f0f0f1; display:flex; align-items:center; justify-content:center; border-radius:4px; overflow:hidden; margin-bottom:10px;">
@@ -73,6 +81,34 @@
             <p style="grid-column: 1 / -1; text-align:center; padding:30px; color:#646970;">Nincsenek feltöltött fotók.</p>
         <?php endif; ?>
     </div>
+
+    <?php
+    $total_pages = $total ? ceil( $total / $per_page ) : 1;
+    if ( $total_pages > 1 ) :
+        $base_url = add_query_arg( array_filter( [
+            'page' => 'photo-market-pro',
+            's'    => $_GET['s']   ?? '',
+            'loc'  => $_GET['loc'] ?? '',
+            'cat'  => $_GET['cat'] ?? '',
+        ] ), admin_url( 'admin.php' ) );
+    ?>
+    <div style="margin-top:24px; text-align:center;">
+        <span style="font-size:13px; color:#646970; margin-right:10px;">
+            <?php echo intval( $total ); ?> fotó, <?php echo $page; ?> / <?php echo $total_pages; ?>. oldal
+        </span>
+        <?php if ( $page > 1 ) : ?>
+            <a href="<?php echo esc_url( add_query_arg( 'paged', $page - 1, $base_url ) ); ?>" class="button">&laquo; Előző</a>
+        <?php endif; ?>
+        <?php for ( $i = max(1, $page-2); $i <= min($total_pages, $page+2); $i++ ) : ?>
+            <a href="<?php echo esc_url( add_query_arg( 'paged', $i, $base_url ) ); ?>"
+               class="button<?php echo $i === $page ? ' button-primary' : ''; ?>"
+               style="margin:0 2px;"><?php echo $i; ?></a>
+        <?php endfor; ?>
+        <?php if ( $page < $total_pages ) : ?>
+            <a href="<?php echo esc_url( add_query_arg( 'paged', $page + 1, $base_url ) ); ?>" class="button">Következő &raquo;</a>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 </div>
 
 <!-- ═══ ADD / EDIT MODAL ═══ -->
