@@ -45,12 +45,14 @@ function pmp_boot() {
     require_once PMP_DIR . 'includes/class-pmp-r2.php';
     require_once PMP_DIR . 'admin/class-pmp-admin.php';
     require_once PMP_DIR . 'public/class-pmp-public.php';
+    require_once PMP_DIR . 'includes/class-pmp-my-account.php';
 
     PMP_Install::init();
     PMP_Photo::init();
     PMP_Edit_Options::init();
     PMP_Download::init();
     PMP_Order::init();
+    PMP_My_Account::init();
     PMP_Admin::init();
     PMP_Public::init();
 }
