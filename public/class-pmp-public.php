@@ -152,7 +152,8 @@ class PMP_Public {
             $full = wp_get_attachment_image_url( (int) $photo['preview_image_id'], 'full' );
         if ( ! $full ) $full = $thumb;
 
-        $price = $photo['product_id'] ? get_post_meta( (int) $photo['product_id'], '_price', true ) : '';
+        $price         = $photo['product_id'] ? get_post_meta( (int) $photo['product_id'], '_price', true ) : '';
+        $shot_date_fmt = $photo['shot_date'] ? date_i18n( 'd/m/Y', strtotime( $photo['shot_date'] ) ) : '';
 
         ob_start(); ?>
         <div class="pmp-card">
@@ -160,7 +161,11 @@ class PMP_Public {
                data-img="<?php echo esc_url( $full ?: $thumb ); ?>"
                data-title="<?php echo esc_attr( $photo['title'] ); ?>"
                data-product="<?php echo esc_url( $url ); ?>"
-               data-price="<?php echo $price > 0 ? esc_attr( number_format( (float) $price, 2, ',', '.' ) . ' €' ) : ''; ?>">
+               data-price="<?php echo $price > 0 ? esc_attr( number_format( (float) $price, 2, ',', '.' ) . ' €' ) : ''; ?>"
+               data-location="<?php echo esc_attr( $photo['location'] ); ?>"
+               data-category="<?php echo esc_attr( $photo['category'] ); ?>"
+               data-date="<?php echo esc_attr( $photo['shot_date'] ); ?>"
+               data-date-fmt="<?php echo esc_attr( $shot_date_fmt ); ?>">
             <?php if ( $thumb ): ?>
               <img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $photo['title'] ); ?>" class="pmp-card-img" loading="lazy">
             <?php else: ?>

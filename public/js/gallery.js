@@ -17,41 +17,123 @@ jQuery(function($){
     if ( ! $( '#pmp-lightbox' ).length ) {
         $( 'body' ).append(
             '<div id="pmp-lightbox" role="dialog" aria-modal="true">' +
-            '<button id="pmp-lightbox-close" aria-label="Chiudi">✕</button>' +
-            '<img id="pmp-lightbox-img" src="" alt="">' +
-            '<div id="pmp-lightbox-bar">' +
-            '<span id="pmp-lightbox-title"></span>' +
-            '<a id="pmp-lightbox-buy" href="#">🛒 Acquista</a>' +
-            '</div></div>'
+              '<button id="pmp-lb-close" aria-label="Chiudi">✕</button>' +
+              '<button id="pmp-lb-prev" aria-label="Precedente">&#8249;</button>' +
+              '<div id="pmp-lb-img-wrap">' +
+                '<img id="pmp-lb-img" src="" alt="">' +
+                '<div id="pmp-lb-overlay">' +
+                  '<div id="pmp-lb-tags"></div>' +
+                  '<div id="pmp-lb-bottom">' +
+                    '<span id="pmp-lb-title"></span>' +
+                    '<a id="pmp-lb-buy" href="#"><span class="pmp-lb-cart">🛒</span><span class="pmp-lb-buy-text"> Acquista</span></a>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<button id="pmp-lb-next" aria-label="Successivo">&#8250;</button>' +
+            '</div>'
         );
     }
 
-    function openLightbox( img, title, product, price ) {
-        $( '#pmp-lightbox-img' ).attr( { src: img, alt: title } );
-        $( '#pmp-lightbox-title' ).text( price ? title + '  –  ' + price : title );
-        $( '#pmp-lightbox-buy' ).attr( 'href', product );
+    var lbList  = [];
+    var lbIndex = 0;
+
+    function buildLbList() {
+        lbList = [];
+        $( '.pmp-lightbox-trigger' ).each( function() {
+            var $t = $( this );
+            lbList.push({
+                img:      $t.data('img'),
+                title:    $t.data('title'),
+                product:  $t.data('product'),
+                price:    $t.data('price'),
+                location: $t.data('location'),
+                category: $t.data('category'),
+                date:     $t.data('date'),
+                dateFmt:  $t.data('date-fmt'),
+            });
+        });
+    }
+
+    function showLbPhoto( idx ) {
+        if ( ! lbList.length ) return;
+        idx = ( idx + lbList.length ) % lbList.length;
+        lbIndex = idx;
+        var p = lbList[ idx ];
+        $( '#pmp-lb-img' ).attr( { src: p.img, alt: p.title } );
+        $( '#pmp-lb-title' ).text( p.price ? p.title + '  –  ' + p.price : p.title );
+        $( '#pmp-lb-buy' ).attr( 'href', p.product );
+
+        var tags = '';
+        if ( p.location ) tags += '<span class="pmp-lb-tag" data-filter="location" data-value="' + p.location + '">📍 ' + p.location + '</span>';
+        if ( p.category ) tags += '<span class="pmp-lb-tag" data-filter="category" data-value="' + p.category + '">🏷 ' + p.category + '</span>';
+        if ( p.dateFmt  ) tags += '<span class="pmp-lb-tag" data-filter="date" data-value="' + p.date + '">📅 ' + p.dateFmt + '</span>';
+        $( '#pmp-lb-tags' ).html( tags );
+
+        $( '#pmp-lb-prev' ).toggle( lbList.length > 1 );
+        $( '#pmp-lb-next' ).toggle( lbList.length > 1 );
+    }
+
+    function openLightbox( idx ) {
+        buildLbList();
+        showLbPhoto( idx );
         $( '#pmp-lightbox' ).addClass( 'open' );
         $( 'body' ).css( 'overflow', 'hidden' );
     }
     function closeLightbox() {
         $( '#pmp-lightbox' ).removeClass( 'open' );
-        $( '#pmp-lightbox-img' ).attr( 'src', '' );
+        $( '#pmp-lb-img' ).attr( 'src', '' );
         $( 'body' ).css( 'overflow', '' );
     }
 
     $( document ).on( 'click', '.pmp-lightbox-trigger', function(e) {
         if ( $( e.target ).closest( '.pmp-card-cta, .pmp-tag' ).length ) return;
         e.preventDefault();
-        var $t = $( this );
-        openLightbox( $t.data('img'), $t.data('title'), $t.data('product'), $t.data('price') );
+        buildLbList();
+        var $t  = $( this );
+        var img = $t.data('img');
+        var idx = 0;
+        lbList.forEach( function( p, i ) { if ( p.img === img ) idx = i; } );
+        openLightbox( idx );
     });
 
-    $( document ).on( 'click', '#pmp-lightbox-close, #pmp-lightbox', function(e) {
+    $( document ).on( 'click', '#pmp-lb-close', closeLightbox );
+    $( document ).on( 'click', '#pmp-lightbox', function(e) {
         if ( e.target === this ) closeLightbox();
     });
+    $( document ).on( 'click', '#pmp-lb-prev', function(e) { e.stopPropagation(); showLbPhoto( lbIndex - 1 ); } );
+    $( document ).on( 'click', '#pmp-lb-next', function(e) { e.stopPropagation(); showLbPhoto( lbIndex + 1 ); } );
 
     $( document ).on( 'keydown', function(e) {
-        if ( e.key === 'Escape' ) closeLightbox();
+        if ( ! $( '#pmp-lightbox' ).hasClass('open') ) return;
+        if ( e.key === 'Escape'     ) closeLightbox();
+        if ( e.key === 'ArrowLeft'  ) showLbPhoto( lbIndex - 1 );
+        if ( e.key === 'ArrowRight' ) showLbPhoto( lbIndex + 1 );
+    });
+
+    /* ── Swipe support ──────────────────────────────── */
+    var swipeX = 0;
+    $( document ).on( 'touchstart', '#pmp-lightbox', function(e) {
+        swipeX = e.originalEvent.touches[0].clientX;
+    });
+    $( document ).on( 'touchend', '#pmp-lightbox', function(e) {
+        var dx = e.originalEvent.changedTouches[0].clientX - swipeX;
+        if ( Math.abs(dx) > 50 ) { dx < 0 ? showLbPhoto( lbIndex + 1 ) : showLbPhoto( lbIndex - 1 ); }
+    });
+
+    /* ── Lightbox tag click → filter + close ────────── */
+    $( document ).on( 'click', '.pmp-lb-tag', function(e) {
+        e.stopPropagation();
+        var type = $( this ).data('filter');
+        var val  = $( this ).data('value');
+        closeLightbox();
+        if ( type === 'location' ) $( '#pmp-f-location' ).val( val ).trigger('change');
+        if ( type === 'category' ) $( '#pmp-f-category' ).val( val ).trigger('change');
+        if ( type === 'date' ) {
+            $( '#pmp-f-date-from' ).val( val );
+            $( '#pmp-f-date-to'   ).val( val );
+            doFilter();
+        }
+        $( 'html, body' ).animate({ scrollTop: $( '#pmp-filters' ).offset().top - 20 }, 300 );
     });
 
     /* ── Clickable card tags ────────────────────────── */
