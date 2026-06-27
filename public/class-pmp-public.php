@@ -136,15 +136,6 @@ class PMP_Public {
           </div>
         </div>
 
-        <div id="pmp-lightbox" role="dialog" aria-modal="true">
-          <button id="pmp-lightbox-close" aria-label="Chiudi">✕</button>
-          <img id="pmp-lightbox-img" src="" alt="">
-          <div id="pmp-lightbox-bar">
-            <span id="pmp-lightbox-title"></span>
-            <a id="pmp-lightbox-buy" href="#">🛒 Acquista</a>
-          </div>
-        </div>
-
         <?php return ob_get_clean();
     }
 
