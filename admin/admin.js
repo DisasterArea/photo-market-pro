@@ -213,50 +213,94 @@ jQuery(function($){
         if (!files.length) { alert('Válassz ki legalább egy fájlt!'); return; }
 
         var price  = $('#pmp-bulk-price').val();
-        var useExt = $('#pmp-bulk-use-external').is(':checked') ? 1 : 0;
         var optIds = [];
         $('.pmp-bulk-opt-cb:checked').each(function(){ optIds.push($(this).val()); });
 
-        var formData = new FormData();
-        formData.append('action', 'pmp_bulk_upload');
-        formData.append('nonce', nonce);
-        formData.append('bulk_price', price);
-        formData.append('bulk_use_external', useExt);
-        optIds.forEach(function(id){ formData.append('bulk_edit_options[]', id); });
-        Array.from(files).forEach(function(f){ formData.append('photos[]', f); });
+        var fileArr  = Array.from(files);
+        var total    = fileArr.length;
+        var done     = 0;
+        var created  = [];
+        var errors   = [];
 
         $('#pmp-bulk-progress').show();
-        $('#pmp-bulk-status').text('Feltöltés folyamatban...');
-        $('.pmp-progress-fill').css('width','30%');
+        $('#pmp-bulk-status').text('0 / ' + total + ' feltöltve...');
+        $('.pmp-progress-fill').css('width', '0%');
 
-        $.ajax({
-            url: ajaxurl, type:'POST', data: formData,
-            processData:false, contentType:false,
-            xhr: function(){
-                var xhr = new window.XMLHttpRequest();
-                xhr.upload.addEventListener('progress', function(e){
-                    if (e.lengthComputable) {
-                        var pct = Math.round(e.loaded/e.total*70)+20;
-                        $('.pmp-progress-fill').css('width', pct+'%');
-                    }
-                });
-                return xhr;
-            },
-            success: function(res){
-                $('.pmp-progress-fill').css('width','100%');
-                if (res.success) {
-                    var d = res.data;
-                    var txt = '✅ '+(d.created||[]).length+' fotó feltöltve.';
-                    if ((d.errors||[]).length) txt += ' ⚠️ '+d.errors.length+' hiba: '+d.errors.join(', ');
-                    $('#pmp-bulk-status').text(txt);
-                    setTimeout(function(){ location.reload(); }, 1800);
-                } else {
-                    $('#pmp-bulk-status').text('❌ Hiba: '+(res.data||'ismeretlen hiba'));
-                }
-            },
-            error: function(xhr){
-                $('#pmp-bulk-status').text('❌ Szerver hiba: '+xhr.status+' '+xhr.statusText);
+        function updateProgress() {
+            done++;
+            var pct = Math.round(done / total * 100);
+            $('.pmp-progress-fill').css('width', pct + '%');
+            $('#pmp-bulk-status').text(done + ' / ' + total + ' feltöltve...');
+            if (done === total) {
+                var txt = '✅ ' + created.length + ' fotó feltöltve.';
+                if (errors.length) txt += ' ⚠️ ' + errors.length + ' hiba: ' + errors.join(', ');
+                $('#pmp-bulk-status').text(txt);
+                setTimeout(function(){ location.reload(); }, 1800);
             }
+        }
+
+        // Upload each file directly to R2 via presigned PUT URL
+        fileArr.forEach(function(file) {
+            // Step 1: get presigned PUT URL from WP
+            $.post(ajaxurl, {
+                action:    'pmp_get_r2_presigned_put',
+                nonce:     nonce,
+                file_name: file.name,
+                file_type: file.type,
+                file_size: file.size,
+            }, function(res) {
+                if (!res.success) {
+                    errors.push(file.name + ': ' + (res.data || 'presign hiba'));
+                    updateProgress();
+                    return;
+                }
+                var putUrl = res.data.put_url;
+                var r2Key  = res.data.r2_key;
+
+                // Step 2: PUT directly to R2 from browser
+                var xhr = new XMLHttpRequest();
+                xhr.open('PUT', putUrl, true);
+                xhr.setRequestHeader('Content-Type', file.type);
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        // Step 3: save photo record in WP (no file transfer)
+                        var saveData = new FormData();
+                        saveData.append('action',       'pmp_bulk_upload');
+                        saveData.append('nonce',        nonce);
+                        saveData.append('bulk_price',   price);
+                        saveData.append('file_name',    file.name);
+                        saveData.append('r2_key',       r2Key);
+                        optIds.forEach(function(id){ saveData.append('bulk_edit_options[]', id); });
+                        $.ajax({
+                            url: ajaxurl, type: 'POST', data: saveData,
+                            processData: false, contentType: false,
+                            success: function(r) {
+                                if (r.success) {
+                                    created.push(file.name);
+                                } else {
+                                    errors.push(file.name + ': ' + (r.data || 'mentési hiba'));
+                                }
+                                updateProgress();
+                            },
+                            error: function() {
+                                errors.push(file.name + ': mentési hiba');
+                                updateProgress();
+                            }
+                        });
+                    } else {
+                        errors.push(file.name + ': R2 hiba (HTTP ' + xhr.status + ')');
+                        updateProgress();
+                    }
+                };
+                xhr.onerror = function() {
+                    errors.push(file.name + ': hálózati hiba');
+                    updateProgress();
+                };
+                xhr.send(file);
+            }).fail(function() {
+                errors.push(file.name + ': presign kérés sikertelen');
+                updateProgress();
+            });
         });
     });
 

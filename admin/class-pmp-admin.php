@@ -27,6 +27,7 @@ class PMP_Admin {
         add_action( 'wp_ajax_pmp_upload_edited_photo',    [ __CLASS__, 'ajax_upload_edited_photo' ] );
         add_action( 'wp_ajax_pmp_delete_preupload',       [ __CLASS__, 'ajax_delete_preupload' ] );
         add_action( 'wp_ajax_pmp_send_order_email',       [ __CLASS__, 'ajax_send_order_email' ] );
+        add_action( 'wp_ajax_pmp_get_r2_presigned_put',   [ __CLASS__, 'ajax_get_r2_presigned_put' ] );
     }
 
     public static function admin_menu() {
@@ -244,117 +245,78 @@ class PMP_Admin {
         return $endpoint . '?' . $query_string . '&X-Amz-Signature=' . $signature;
     }
 
+    /**
+     * Generate a presigned PUT URL so the browser can upload directly to R2.
+     * No file content passes through WordPress.
+     */
+    public static function ajax_get_r2_presigned_put() {
+        check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
+
+        $file_name = sanitize_file_name( $_POST['file_name'] ?? '' );
+        $file_type = sanitize_text_field( $_POST['file_type'] ?? 'image/jpeg' );
+        $file_size = intval( $_POST['file_size'] ?? 0 );
+
+        if ( ! $file_name || ! $file_size ) {
+            wp_send_json_error( 'Hiányzó paraméterek.' );
+        }
+
+        $r2_key  = 'eredeti/' . time() . '_' . $file_name;
+        $put_url = self::generate_r2_put_url( $r2_key, $file_type, $file_size );
+
+        if ( ! $put_url ) {
+            wp_send_json_error( 'R2 nincs konfigurálva.' );
+        }
+
+        wp_send_json_success( [ 'put_url' => $put_url, 'r2_key' => $r2_key ] );
+    }
+
+    /**
+     * Save a single photo record after the browser has already uploaded the file to R2.
+     * Called once per file; receives file_name + r2_key, no file binary.
+     */
     public static function ajax_bulk_upload() {
         check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
 
-        if ( empty( $_FILES['photos'] ) ) wp_send_json_error( 'Nincsenek fájlok.' );
+        $file_name = sanitize_file_name( $_POST['file_name'] ?? '' );
+        $r2_key    = sanitize_text_field( $_POST['r2_key']   ?? '' );
+        $price     = floatval( $_POST['bulk_price'] ?? 0 );
+        $opt_ids   = array_map( 'intval', $_POST['bulk_edit_options'] ?? [] );
 
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        require_once ABSPATH . 'wp-admin/includes/image.php';
-        require_once ABSPATH . 'wp-admin/includes/media.php';
-
-        $price   = floatval( $_POST['bulk_price'] ?? 0 );
-        $opt_ids = array_map( 'intval', $_POST['bulk_edit_options'] ?? [] );
-        $created = [];
-        $errors  = [];
-        $files   = $_FILES['photos'];
-        $count   = count( $files['name'] );
-
-        global $wpdb;
-
-        for ( $i = 0; $i < $count; $i++ ) {
-            if ( $files['error'][$i] !== UPLOAD_ERR_OK ) {
-                $errors[] = $files['name'][$i] . ': feltöltési hiba';
-                continue;
-            }
-
-            $filename  = pathinfo( $files['name'][$i], PATHINFO_FILENAME );
-            $parts     = explode( '_', $filename );
-            $location  = isset( $parts[0] ) ? ucfirst( str_replace( '-', ' ', $parts[0] ) ) : '';
-            $category  = isset( $parts[1] ) ? ucfirst( str_replace( '-', ' ', $parts[1] ) ) : '';
-            $date_raw  = $parts[2] ?? '';
-            $shot_date = '';
-            if ( preg_match( '/^(\d{4})(\d{2})(\d{2})$/', $date_raw, $m ) ) {
-                $shot_date = "{$m[1]}-{$m[2]}-{$m[3]}";
-            } elseif ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_raw ) ) {
-                $shot_date = $date_raw;
-            }
-
-            // 1. WP médiatár – előnézeti kép
-            $file_array = [
-                'name'     => $files['name'][$i],
-                'tmp_name' => $files['tmp_name'][$i],
-                'type'     => $files['type'][$i],
-                'error'    => $files['error'][$i],
-                'size'     => $files['size'][$i],
-            ];
-            $attach_id = media_handle_sideload( $file_array, 0 );
-            if ( is_wp_error( $attach_id ) ) {
-                $errors[] = $files['name'][$i] . ': ' . $attach_id->get_error_message();
-                continue;
-            }
-
-            // 2. R2 feltöltés
-            $r2_file_key = 'eredeti/' . time() . '_' . $files['name'][$i];
-            $file_path   = get_attached_file( $attach_id );
-            $file_size   = filesize( $file_path );
-            $upload_url  = self::generate_r2_put_url( $r2_file_key, $files['type'][$i], $file_size );
-            $file_data   = file_get_contents( $file_path );
-            $host        = get_option( 'pmp_r2_account_id' ) . '.r2.cloudflarestorage.com';
-
-            $ch = curl_init();
-            curl_setopt( $ch, CURLOPT_URL,           $upload_url );
-            curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, 'PUT' );
-            curl_setopt( $ch, CURLOPT_POSTFIELDS,    $file_data );
-            curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-            curl_setopt( $ch, CURLOPT_HEADER,        false );
-            curl_setopt( $ch, CURLOPT_HTTPHEADER, [
-                'Host: '           . $host,
-                'Content-Type: '   . $files['type'][$i],
-                'Content-Length: ' . $file_size,
-            ]);
-            $response  = curl_exec( $ch );
-            $http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-            curl_close( $ch );
-
-            if ( $http_code !== 200 ) {
-                $errors[] = $files['name'][$i] . ': R2 hiba (HTTP ' . $http_code . ')';
-                wp_delete_attachment( $attach_id, true );
-                continue;
-            }
-
-            // 3. PMP mentés
-            $title    = trim( "$location $category" ) ?: $filename;
-            $photo_id = PMP_Photo::save( [
-                'title'            => $title,
-                'location'         => $location,
-                'category'         => $category,
-                'shot_date'        => $shot_date,
-                'price'            => $price,
-                'preview_image_id' => $attach_id,
-                'use_external'     => 1,
-                'external_key'     => $r2_file_key,
-                'download_url'     => '',
-                'edit_option_ids'  => $opt_ids,
-            ] );
-
-            // 4. Előzetes letöltési token (importhoz)
-            $secure_token = bin2hex( random_bytes( 32 ) );
-            $wpdb->insert( $wpdb->prefix . 'pmp_download_tokens', [
-                'token'          => $secure_token,
-                'order_id'       => 0,
-                'order_item_id'  => 0,
-                'photo_id'       => $photo_id,
-                'customer_email' => 'import@system.local',
-                'expires_at'     => gmdate( 'Y-m-d H:i:s', time() + 315360000 ),
-                'max_downloads'  => 20,
-            ] );
-
-            $created[] = [ 'photo_id' => $photo_id, 'title' => $title ];
+        if ( ! $file_name || ! $r2_key ) {
+            wp_send_json_error( 'Hiányzó fájlnév vagy R2 kulcs.' );
         }
 
-        wp_send_json_success( [ 'created' => $created, 'errors' => $errors ] );
+        $filename  = pathinfo( $file_name, PATHINFO_FILENAME );
+        $parts     = explode( '_', $filename );
+        $location  = isset( $parts[0] ) ? ucfirst( str_replace( '-', ' ', $parts[0] ) ) : '';
+        $category  = isset( $parts[1] ) ? ucfirst( str_replace( '-', ' ', $parts[1] ) ) : '';
+        $date_raw  = $parts[2] ?? '';
+        $shot_date = '';
+        if ( preg_match( '/^(\d{4})(\d{2})(\d{2})$/', $date_raw, $m ) ) {
+            $shot_date = "{$m[1]}-{$m[2]}-{$m[3]}";
+        } elseif ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_raw ) ) {
+            $shot_date = $date_raw;
+        }
+
+        $photo_id = PMP_Photo::save( [
+            'location'        => $location,
+            'category'        => $category,
+            'shot_date'       => $shot_date,
+            'price'           => $price,
+            'preview_image_id'=> 0,
+            'use_external'    => 1,
+            'external_key'    => $r2_key,
+            'download_url'    => '',
+            'edit_option_ids' => $opt_ids,
+        ] );
+
+        if ( ! $photo_id ) {
+            wp_send_json_error( 'Adatbázis mentési hiba.' );
+        }
+
+        wp_send_json_success( [ 'photo_id' => $photo_id ] );
     }
 
     public static function ajax_get_filter_data() {
