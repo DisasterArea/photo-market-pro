@@ -4,7 +4,7 @@
  * Plugin URI:  https://yoursite.com
  * Description: Digitális fotó értékesítés WooCommerce-hez – kategóriák, szerkesztési opciók, biztonságos letöltési linkek, külső szerver támogatás.
 
- * Version:     1.7.0
+ * Version:     1.7.1
 
  * Author:      Your Name
  * Text Domain: photo-market-pro
@@ -16,7 +16,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 
-define( 'PMP_VERSION',     '1.7.0' );
+define( 'PMP_VERSION',     '1.7.1' );
 
 define( 'PMP_FILE',        __FILE__ );
 define( 'PMP_DIR',         plugin_dir_path( __FILE__ ) );
@@ -27,6 +27,10 @@ require_once PMP_DIR . 'includes/class-pmp-install.php';
 
 register_activation_hook( __FILE__, [ 'PMP_Install', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'PMP_Install', 'deactivate' ] );
+
+// Increase JPEG quality for WP/WC generated thumbnail sizes (default is 82)
+add_filter( 'jpeg_quality',           function() { return 92; } );
+add_filter( 'wp_editor_set_quality',  function() { return 92; } );
 
 add_action( 'plugins_loaded', 'pmp_boot', 5 );
 
