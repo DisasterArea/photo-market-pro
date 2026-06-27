@@ -216,94 +216,102 @@ jQuery(function($){
         var optIds = [];
         $('.pmp-bulk-opt-cb:checked').each(function(){ optIds.push($(this).val()); });
 
-        var fileArr  = Array.from(files);
-        var total    = fileArr.length;
-        var done     = 0;
-        var created  = [];
-        var errors   = [];
+        var fileArr = Array.from(files);
+        var total   = fileArr.length;
+        var done    = 0;
+        var created = [];
+        var errors  = [];
 
         $('#pmp-bulk-progress').show();
         $('#pmp-bulk-status').text('0 / ' + total + ' feltöltve...');
         $('.pmp-progress-fill').css('width', '0%');
 
-        function updateProgress() {
-            done++;
-            var pct = Math.round(done / total * 100);
-            $('.pmp-progress-fill').css('width', pct + '%');
-            $('#pmp-bulk-status').text(done + ' / ' + total + ' feltöltve...');
-            if (done === total) {
+        // Generate a small JPEG thumbnail via Canvas (max 400px wide)
+        function makeThumbnail(file, callback) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    var maxW = 400, maxH = 400;
+                    var w = img.width, h = img.height;
+                    if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+                    if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.82);
+                };
+                img.onerror = function() { callback(null); };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() { callback(null); };
+            reader.readAsDataURL(file);
+        }
+
+        // Sequential upload: process one file at a time to avoid duplicate titles
+        function uploadNext(index) {
+            if (index >= total) {
                 var txt = '✅ ' + created.length + ' fotó feltöltve.';
                 if (errors.length) txt += ' ⚠️ ' + errors.length + ' hiba: ' + errors.join(', ');
                 $('#pmp-bulk-status').text(txt);
                 setTimeout(function(){ location.reload(); }, 1800);
+                return;
             }
-        }
 
-        // Upload each file directly to R2 via presigned PUT URL
-        fileArr.forEach(function(file) {
-            // Step 1: get presigned PUT URL from WP
+            var file = fileArr[index];
+            $('#pmp-bulk-status').text((index + 1) + ' / ' + total + ' – ' + file.name);
+            $('.pmp-progress-fill').css('width', Math.round((index / total) * 100) + '%');
+
+            function onError(msg) {
+                errors.push(file.name + ': ' + msg);
+                uploadNext(index + 1);
+            }
+
+            // Step 1: get presigned PUT URL
             $.post(ajaxurl, {
-                action:    'pmp_get_r2_presigned_put',
-                nonce:     nonce,
-                file_name: file.name,
-                file_type: file.type,
-                file_size: file.size,
+                action: 'pmp_get_r2_presigned_put', nonce: nonce,
+                file_name: file.name, file_type: file.type, file_size: file.size,
             }, function(res) {
-                if (!res.success) {
-                    errors.push(file.name + ': ' + (res.data || 'presign hiba'));
-                    updateProgress();
-                    return;
-                }
-                var putUrl     = res.data.put_url;
-                var r2Key      = res.data.r2_key;
-                var previewUrl = res.data.preview_url || '';
+                if (!res.success) { onError(res.data || 'presign hiba'); return; }
 
-                // Step 2: PUT directly to R2 from browser
+                var putUrl = res.data.put_url;
+                var r2Key  = res.data.r2_key;
+
+                // Step 2: PUT full file directly to R2
                 var xhr = new XMLHttpRequest();
                 xhr.open('PUT', putUrl, true);
                 xhr.setRequestHeader('Content-Type', file.type);
                 xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        // Step 3: save photo record in WP (no file transfer)
+                    if (xhr.status !== 200) { onError('R2 hiba (HTTP ' + xhr.status + ')'); return; }
+
+                    // Step 3: generate thumbnail in browser, send to WP
+                    makeThumbnail(file, function(thumbBlob) {
                         var saveData = new FormData();
-                        saveData.append('action',       'pmp_bulk_upload');
-                        saveData.append('nonce',        nonce);
-                        saveData.append('bulk_price',   price);
-                        saveData.append('file_name',    file.name);
-                        saveData.append('r2_key',       r2Key);
-                        saveData.append('preview_url',  previewUrl);
+                        saveData.append('action',      'pmp_bulk_upload');
+                        saveData.append('nonce',       nonce);
+                        saveData.append('bulk_price',  price);
+                        saveData.append('file_name',   file.name);
+                        saveData.append('r2_key',      r2Key);
+                        if (thumbBlob) saveData.append('thumb_file', thumbBlob, file.name);
                         optIds.forEach(function(id){ saveData.append('bulk_edit_options[]', id); });
+
                         $.ajax({
                             url: ajaxurl, type: 'POST', data: saveData,
                             processData: false, contentType: false,
                             success: function(r) {
-                                if (r.success) {
-                                    created.push(file.name);
-                                } else {
-                                    errors.push(file.name + ': ' + (r.data || 'mentési hiba'));
-                                }
-                                updateProgress();
+                                if (r.success) { created.push(file.name); } else { errors.push(file.name + ': ' + (r.data || 'mentési hiba')); }
+                                uploadNext(index + 1);
                             },
-                            error: function() {
-                                errors.push(file.name + ': mentési hiba');
-                                updateProgress();
-                            }
+                            error: function() { onError('mentési hiba'); }
                         });
-                    } else {
-                        errors.push(file.name + ': R2 hiba (HTTP ' + xhr.status + ')');
-                        updateProgress();
-                    }
+                    });
                 };
-                xhr.onerror = function() {
-                    errors.push(file.name + ': hálózati hiba');
-                    updateProgress();
-                };
+                xhr.onerror = function() { onError('hálózati hiba'); };
                 xhr.send(file);
-            }).fail(function() {
-                errors.push(file.name + ': presign kérés sikertelen');
-                updateProgress();
-            });
-        });
+            }).fail(function() { onError('presign kérés sikertelen'); });
+        }
+
+        uploadNext(0);
     });
 
     /* ── Edit options page ───────────────────────────────── */

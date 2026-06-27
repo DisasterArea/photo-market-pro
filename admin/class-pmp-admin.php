@@ -268,14 +268,7 @@ class PMP_Admin {
             wp_send_json_error( 'R2 nincs konfigurálva.' );
         }
 
-        // Generate a long-lived presigned GET URL for use as admin preview thumbnail
-        $preview_url = PMP_R2::presigned_url( $r2_key, 365 * 24 * 3600 );
-
-        wp_send_json_success( [
-            'put_url'     => $put_url,
-            'r2_key'      => $r2_key,
-            'preview_url' => $preview_url ?: '',
-        ] );
+        wp_send_json_success( [ 'put_url' => $put_url, 'r2_key' => $r2_key ] );
     }
 
     /**
@@ -294,8 +287,6 @@ class PMP_Admin {
         if ( ! $file_name || ! $r2_key ) {
             wp_send_json_error( 'Hiányzó fájlnév vagy R2 kulcs.' );
         }
-
-        $preview_url = sanitize_text_field( $_POST['preview_url'] ?? '' );
 
         $filename  = pathinfo( $file_name, PATHINFO_FILENAME );
         $parts     = explode( '_', $filename );
@@ -324,24 +315,22 @@ class PMP_Admin {
             $location = ucfirst( str_replace( '-', ' ', $parts[0] ?? '' ) );
         }
 
-        // Sideload the image from R2 into WP media library for thumbnail use.
-        // PHP fetches from R2 (server-side GET) — not affected by PHP upload size limits.
+        // Sideload the browser-generated thumbnail into WP media library.
+        // The thumb is a small JPEG (≤400px) sent directly — no 413 risk.
         $attach_id = 0;
-        if ( $preview_url ) {
+        if ( ! empty( $_FILES['thumb_file'] ) && $_FILES['thumb_file']['error'] === UPLOAD_ERR_OK ) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
             require_once ABSPATH . 'wp-admin/includes/image.php';
             require_once ABSPATH . 'wp-admin/includes/media.php';
-            $tmp = download_url( $preview_url, 30 );
-            if ( ! is_wp_error( $tmp ) ) {
-                $file_array = [
-                    'name'     => $file_name,
-                    'tmp_name' => $tmp,
-                ];
-                $attach_id = media_handle_sideload( $file_array, 0 );
-                if ( is_wp_error( $attach_id ) ) {
-                    @unlink( $tmp );
-                    $attach_id = 0;
-                }
+            $attach_id = media_handle_sideload( [
+                'name'     => $file_name,
+                'tmp_name' => $_FILES['thumb_file']['tmp_name'],
+                'type'     => 'image/jpeg',
+                'error'    => UPLOAD_ERR_OK,
+                'size'     => $_FILES['thumb_file']['size'],
+            ], 0 );
+            if ( is_wp_error( $attach_id ) ) {
+                $attach_id = 0;
             }
         }
 
@@ -351,7 +340,6 @@ class PMP_Admin {
             'shot_date'        => $shot_date,
             'price'            => $price,
             'preview_image_id' => $attach_id ?: 0,
-            'preview_url'      => $attach_id ? '' : $preview_url,
             'use_external'     => 1,
             'external_key'     => $r2_key,
             'download_url'     => '',
