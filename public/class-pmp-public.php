@@ -252,19 +252,25 @@ class PMP_Public {
     public static function show_order_downloads( $order_id ) {
         $tokens = PMP_Download::get_tokens_for_order( $order_id );
         if ( empty( $tokens ) ) return;
-        echo '<section class="pmp-order-downloads"><h2>📷 Fotó letöltések</h2>';
-        echo '<table class="woocommerce-table shop_table"><thead><tr><th>Fotó</th><th>Lejárat</th><th>Letöltve</th><th></th></tr></thead><tbody>';
+
+        $expiry_h = get_option( 'pmp_download_expiry_hours', 48 );
+        $max_dl   = get_option( 'pmp_download_max_count', 3 );
+
+        echo '<section class="pmp-order-downloads">';
+        echo '<h2>📷 Download delle foto</h2>';
+        echo '<p style="font-size:14px;color:#aaa;margin-bottom:12px;">Hai ricevuto anche una email con i link di download. I link sono validi per <strong>' . intval( $expiry_h ) . ' ore</strong> e possono essere utilizzati al massimo <strong>' . intval( $max_dl ) . ' volte</strong>.</p>';
+        echo '<table class="woocommerce-table shop_table"><thead><tr><th>Foto</th><th>Scadenza</th><th>Scaricato</th><th></th></tr></thead><tbody>';
         foreach ( $tokens as $t ) {
             $expired   = strtotime( $t['expires_at'] ) < time();
             $exhausted = intval( $t['download_count'] ) >= intval( $t['max_downloads'] );
             echo '<tr>';
             echo '<td>' . esc_html( $t['photo_title'] ?: '–' ) . '</td>';
-            echo '<td>' . esc_html( wp_date( 'Y.m.d H:i', strtotime( $t['expires_at'] ) ) ) . '</td>';
+            echo '<td>' . esc_html( wp_date( 'd/m/Y H:i', strtotime( $t['expires_at'] ) ) ) . '</td>';
             echo '<td>' . intval( $t['download_count'] ) . '/' . intval( $t['max_downloads'] ) . '</td>';
             echo '<td>';
-            if      ( $expired )   echo '<span style="color:#dc3232;">Lejárt</span>';
-            elseif  ( $exhausted ) echo '<span style="color:#dc3232;">Kimerült</span>';
-            else                   echo '<a href="' . esc_url( PMP_Download::get_download_url( $t['token'] ) ) . '" class="button">Letöltés</a>';
+            if      ( $expired )   echo '<span style="color:#dc3232;">Scaduto</span>';
+            elseif  ( $exhausted ) echo '<span style="color:#dc3232;">Esaurito</span>';
+            else                   echo '<a href="' . esc_url( PMP_Download::get_download_url( $t['token'] ) ) . '" class="button">Scarica</a>';
             echo '</td></tr>';
         }
         echo '</tbody></table></section>';
