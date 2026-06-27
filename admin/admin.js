@@ -232,14 +232,14 @@ jQuery(function($){
             reader.onload = function(e) {
                 var img = new Image();
                 img.onload = function() {
-                    var maxW = 1600, maxH = 1600;
+                    var maxW = 800, maxH = 800;
                     var w = img.width, h = img.height;
                     if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
                     if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
                     var canvas = document.createElement('canvas');
                     canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.82);
+                    canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.92);
                 };
                 img.onerror = function() { callback(null); };
                 img.src = e.target.result;
