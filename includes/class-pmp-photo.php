@@ -25,21 +25,21 @@ class PMP_Photo {
         $edit_options = self::get_photo_edit_options( $photo['id'] );
         if ( empty( $edit_options ) ) return;
 
-        echo '<div class="pmp-edit-options" style="margin:16px 0;padding:16px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;">';
-        echo '<h4 style="margin-top:0;">' . esc_html__( 'Szerkesztési opciók (opcionális)', 'photo-market-pro' ) . '</h4>';
+        echo '<div class="pmp-edit-options">';
+        echo '<h4 class="pmp-edit-title">Opzioni di editing (opzionale)</h4>';
         foreach ( $edit_options as $opt ) {
-            echo '<label style="display:block;margin:8px 0;cursor:pointer;">';
-            echo '<input type="checkbox" name="pmp_edit_option[]" value="' . esc_attr( $opt['id'] ) . '" class="pmp-edit-option-cb" data-price="' . esc_attr( $opt['price'] ) . '" style="margin-right:8px;"> ';
+            echo '<label class="pmp-edit-label">';
+            echo '<input type="checkbox" name="pmp_edit_option[]" value="' . esc_attr( $opt['id'] ) . '" class="pmp-edit-option-cb" data-price="' . esc_attr( $opt['price'] ) . '"> ';
             echo '<strong>' . esc_html( $opt['name'] ) . '</strong>';
-            if ( $opt['description'] ) echo ' <span style="color:#777;font-size:13px;">– ' . esc_html( $opt['description'] ) . '</span>';
-            echo ' <span style="color:#e94560;font-weight:700;">+' . number_format( $opt['price'], 0, ',', '.' ) . ' Ft</span>';
+            if ( $opt['description'] ) echo ' <span class="pmp-edit-desc">– ' . esc_html( $opt['description'] ) . '</span>';
+            echo ' <span class="pmp-edit-price">+' . number_format( $opt['price'], 0, ',', '.' ) . ' Ft</span>';
             echo '</label>';
         }
-        echo '<div style="margin-top:12px;">';
-        echo '<label style="font-weight:600;display:block;margin-bottom:6px;">' . esc_html__( 'Megjegyzés / kérés:', 'photo-market-pro' ) . '</label>';
-        echo '<textarea name="pmp_edit_request" rows="3" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" placeholder="' . esc_attr__( 'Írja le részletesen, mit szeretne...', 'photo-market-pro' ) . '"></textarea>';
+        echo '<div class="pmp-edit-note-wrap">';
+        echo '<label class="pmp-edit-note-label">Note / richiesta:</label>';
+        echo '<textarea name="pmp_edit_request" rows="3" class="pmp-edit-textarea" placeholder="Descrivi nel dettaglio cosa desideri..."></textarea>';
         echo '</div>';
-        echo '<p id="pmp-price-preview" style="margin:10px 0 0;font-size:14px;"></p>';
+        echo '<p id="pmp-price-preview" class="pmp-edit-preview"></p>';
         echo '</div>';
         ?>
         <script>
@@ -51,7 +51,7 @@ class PMP_Photo {
                 document.querySelectorAll('.pmp-edit-option-cb:checked').forEach(function(cb){ extra += parseFloat(cb.dataset.price)||0; });
                 var el = document.getElementById('pmp-price-preview');
                 el.innerHTML = extra > 0
-                    ? 'Opciók: <strong>+' + fmt(extra) + ' Ft</strong> &nbsp;→&nbsp; Végösszeg: <strong>' + fmt(base+extra) + ' Ft</strong>'
+                    ? 'Opzioni: <strong>+' + fmt(extra) + ' Ft</strong> &nbsp;→&nbsp; Totale: <strong>' + fmt(base+extra) + ' Ft</strong>'
                     : '';
             }
             document.querySelectorAll('.pmp-edit-option-cb').forEach(function(cb){ cb.addEventListener('change', update); });
