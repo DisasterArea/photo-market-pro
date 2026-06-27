@@ -98,7 +98,7 @@ class PMP_Order {
     private static function send_download_email( $order, $tokens ) {
         $to      = $order->get_billing_email();
         $name    = $order->get_billing_first_name();
-        $subject = sprintf( __( 'Fotó letöltési link – #%s rendelés', 'photo-market-pro' ), $order->get_order_number() );
+        $subject = sprintf( 'Link per il download delle foto – Ordine #%s', $order->get_order_number() );
 
         $expiry_h = get_option( 'pmp_download_expiry_hours', 48 );
         $max_dl   = get_option( 'pmp_download_max_count', 3 );
