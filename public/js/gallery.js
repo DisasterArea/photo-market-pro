@@ -28,10 +28,6 @@ jQuery(function($){
 
     /* ── Chained: location changes → reload categories + auto filter ── */
     $( document ).on( 'change', '#pmp-f-location', function(){
-        $( '#pmp-f-category' ).val('');
-        $( '#pmp-f-category' ).siblings( '.aurel_select' ).text(
-            $( '#pmp-f-category option:first' ).text()
-        );
         refreshOptions();
         doFilter();
     });
@@ -139,8 +135,6 @@ jQuery(function($){
         if ( field === 'location' ) {
             $( '#pmp-f-location' ).val('');
             $( '#pmp-f-location' ).siblings( '.aurel_select' ).text( $( '#pmp-f-location option:first' ).text() );
-            $( '#pmp-f-category' ).val('');
-            $( '#pmp-f-category' ).siblings( '.aurel_select' ).text( $( '#pmp-f-category option:first' ).text() );
             refreshOptions();
         } else if ( field === 'category' ) {
             $( '#pmp-f-category' ).val('');
