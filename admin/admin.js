@@ -232,7 +232,7 @@ jQuery(function($){
             reader.onload = function(e) {
                 var img = new Image();
                 img.onload = function() {
-                    var maxW = 800, maxH = 800;
+                    var maxW = 1600, maxH = 1600;
                     var w = img.width, h = img.height;
                     if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
                     if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
