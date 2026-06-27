@@ -135,6 +135,16 @@ class PMP_Public {
             <div class="pmp-spinner-wrap"><span class="pmp-spinner"></span><span>Caricamento...</span></div>
           </div>
         </div>
+
+        <div id="pmp-lightbox" role="dialog" aria-modal="true">
+          <button id="pmp-lightbox-close" aria-label="Chiudi">✕</button>
+          <img id="pmp-lightbox-img" src="" alt="">
+          <div id="pmp-lightbox-bar">
+            <span id="pmp-lightbox-title"></span>
+            <a id="pmp-lightbox-buy" href="#">🛒 Acquista</a>
+          </div>
+        </div>
+
         <?php return ob_get_clean();
     }
 
@@ -146,11 +156,20 @@ class PMP_Public {
         if ( ! $thumb && ! empty( $photo['preview_url'] ) )
             $thumb = $photo['preview_url'];
 
+        $full  = '';
+        if ( ! empty( $photo['preview_image_id'] ) )
+            $full = wp_get_attachment_image_url( (int) $photo['preview_image_id'], 'full' );
+        if ( ! $full ) $full = $thumb;
+
         $price = $photo['product_id'] ? get_post_meta( (int) $photo['product_id'], '_price', true ) : '';
 
         ob_start(); ?>
         <div class="pmp-card">
-          <a href="<?php echo esc_url( $url ); ?>" class="pmp-card-link">
+          <div class="pmp-card-link pmp-lightbox-trigger"
+               data-img="<?php echo esc_url( $full ?: $thumb ); ?>"
+               data-title="<?php echo esc_attr( $photo['title'] ); ?>"
+               data-product="<?php echo esc_url( $url ); ?>"
+               data-price="<?php echo $price > 0 ? esc_attr( number_format( (float) $price, 2, ',', '.' ) . ' €' ) : ''; ?>">
             <?php if ( $thumb ): ?>
               <img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $photo['title'] ); ?>" class="pmp-card-img" loading="lazy">
             <?php else: ?>
@@ -167,9 +186,9 @@ class PMP_Public {
               <?php if ( $price > 0 ): ?>
                 <span class="pmp-card-price"><?php echo number_format( (float) $price, 2, ',', '.' ); ?> €</span>
               <?php endif; ?>
-              <span class="pmp-card-cta">🛒</span>
+              <a href="<?php echo esc_url( $url ); ?>" class="pmp-card-cta" title="Acquista">🛒</a>
             </div>
-          </a>
+          </div>
         </div>
         <?php return ob_get_clean();
     }

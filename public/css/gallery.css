@@ -479,6 +479,79 @@ body input.pmp-filter-select:focus {
 .pmp-order-downloads { margin-top: 28px; }
 .pmp-order-downloads h2 { font-size: 20px; margin-bottom: 14px; }
 
+/* ── Lightbox ─────────────────────────────────────── */
+#pmp-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0,0,0,.92);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  cursor: zoom-out;
+}
+#pmp-lightbox.open { display: flex; }
+
+#pmp-lightbox-img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 8px 60px rgba(0,0,0,.8);
+  cursor: default;
+}
+
+#pmp-lightbox-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 900px;
+  margin-top: 16px;
+  gap: 12px;
+  cursor: default;
+}
+
+#pmp-lightbox-title {
+  color: #ccc;
+  font-size: 14px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#pmp-lightbox-buy {
+  background: var(--pmp-accent);
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 20px;
+  white-space: nowrap;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+#pmp-lightbox-buy:hover { background: var(--pmp-accent2); color: #fff; }
+
+#pmp-lightbox-close {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  color: #aaa;
+  font-size: 28px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color .2s;
+  background: none;
+  border: none;
+}
+#pmp-lightbox-close:hover { color: #fff; }
+
 /* ── Load more button ─────────────────────────────── */
 .pmp-btn-load-more {
   display: inline-block;

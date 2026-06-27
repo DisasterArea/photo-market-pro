@@ -4,7 +4,7 @@
  * Plugin URI:  https://yoursite.com
  * Description: Digitális fotó értékesítés WooCommerce-hez – kategóriák, szerkesztési opciók, biztonságos letöltési linkek, külső szerver támogatás.
 
- * Version:     1.7.2
+ * Version:     1.7.3
 
  * Author:      Your Name
  * Text Domain: photo-market-pro
@@ -16,7 +16,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 
-define( 'PMP_VERSION',     '1.7.2' );
+define( 'PMP_VERSION',     '1.7.3' );
 
 define( 'PMP_FILE',        __FILE__ );
 define( 'PMP_DIR',         plugin_dir_path( __FILE__ ) );

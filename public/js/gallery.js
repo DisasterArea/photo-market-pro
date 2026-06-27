@@ -13,6 +13,35 @@ jQuery(function($){
     /* ── Boot: load dropdowns ──────────────────────── */
     refreshOptions();
 
+    /* ── Lightbox ───────────────────────────────────── */
+    function openLightbox( img, title, product, price ) {
+        $( '#pmp-lightbox-img' ).attr( { src: img, alt: title } );
+        $( '#pmp-lightbox-title' ).text( price ? title + '  –  ' + price : title );
+        $( '#pmp-lightbox-buy' ).attr( 'href', product );
+        $( '#pmp-lightbox' ).addClass( 'open' );
+        $( 'body' ).css( 'overflow', 'hidden' );
+    }
+    function closeLightbox() {
+        $( '#pmp-lightbox' ).removeClass( 'open' );
+        $( '#pmp-lightbox-img' ).attr( 'src', '' );
+        $( 'body' ).css( 'overflow', '' );
+    }
+
+    $( document ).on( 'click', '.pmp-lightbox-trigger', function(e) {
+        if ( $( e.target ).closest( '.pmp-card-cta, .pmp-tag' ).length ) return;
+        e.preventDefault();
+        var $t = $( this );
+        openLightbox( $t.data('img'), $t.data('title'), $t.data('product'), $t.data('price') );
+    });
+
+    $( document ).on( 'click', '#pmp-lightbox-close, #pmp-lightbox', function(e) {
+        if ( e.target === this ) closeLightbox();
+    });
+
+    $( document ).on( 'keydown', function(e) {
+        if ( e.key === 'Escape' ) closeLightbox();
+    });
+
     /* ── Clickable card tags ────────────────────────── */
     $( document ).on( 'click', '.pmp-tag[data-filter]', function(e) {
         e.preventDefault();
