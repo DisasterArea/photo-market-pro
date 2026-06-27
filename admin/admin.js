@@ -238,8 +238,11 @@ jQuery(function($){
                     if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
                     var canvas = document.createElement('canvas');
                     canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.92);
+                    var ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, w, h);
+                    canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.95);
                 };
                 img.onerror = function() { callback(null); };
                 img.src = e.target.result;
