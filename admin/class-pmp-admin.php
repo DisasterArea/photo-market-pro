@@ -324,13 +324,34 @@ class PMP_Admin {
             $location = ucfirst( str_replace( '-', ' ', $parts[0] ?? '' ) );
         }
 
+        // Sideload the image from R2 into WP media library for thumbnail use.
+        // PHP fetches from R2 (server-side GET) — not affected by PHP upload size limits.
+        $attach_id = 0;
+        if ( $preview_url ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            $tmp = download_url( $preview_url, 30 );
+            if ( ! is_wp_error( $tmp ) ) {
+                $file_array = [
+                    'name'     => $file_name,
+                    'tmp_name' => $tmp,
+                ];
+                $attach_id = media_handle_sideload( $file_array, 0 );
+                if ( is_wp_error( $attach_id ) ) {
+                    @unlink( $tmp );
+                    $attach_id = 0;
+                }
+            }
+        }
+
         $photo_id = PMP_Photo::save( [
             'location'         => $location,
             'category'         => $category,
             'shot_date'        => $shot_date,
             'price'            => $price,
-            'preview_image_id' => 0,
-            'preview_url'      => $preview_url,
+            'preview_image_id' => $attach_id ?: 0,
+            'preview_url'      => $attach_id ? '' : $preview_url,
             'use_external'     => 1,
             'external_key'     => $r2_key,
             'download_url'     => '',
