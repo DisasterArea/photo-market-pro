@@ -133,6 +133,26 @@ jQuery(function($){
         $sel.val( val ).trigger( 'change' );
     });
 
+    /* ── Active filter tag remove ───────────────────────────── */
+    $( document ).on( 'click', '.pmp-active-rm', function() {
+        var field = $( this ).data('clear');
+        if ( field === 'location' ) {
+            $( '#pmp-f-location' ).val('');
+            $( '#pmp-f-location' ).siblings( '.aurel_select' ).text( $( '#pmp-f-location option:first' ).text() );
+            $( '#pmp-f-category' ).val('');
+            $( '#pmp-f-category' ).siblings( '.aurel_select' ).text( $( '#pmp-f-category option:first' ).text() );
+            refreshOptions();
+        } else if ( field === 'category' ) {
+            $( '#pmp-f-category' ).val('');
+            $( '#pmp-f-category' ).siblings( '.aurel_select' ).text( $( '#pmp-f-category option:first' ).text() );
+        } else if ( field === 'date_from' ) {
+            $( '#pmp-f-date-from' ).val('');
+        } else if ( field === 'date_to' ) {
+            $( '#pmp-f-date-to' ).val('');
+        }
+        doFilter();
+    });
+
     /* ── Format date YYYY-MM-DD → DD/MM/YYYY ───────────────── */
     function pmpFmtDate( d ) {
         if ( !d ) return d;
@@ -155,7 +175,12 @@ jQuery(function($){
 
         var $af = $( '#pmp-active-filters' );
         if ( tags.length ) {
-            $af.html( tags.map( function(t){ return '<span class="pmp-active-tag">'+t+'</span>'; }).join('') ).show();
+            var html = '';
+            if ( location ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="location">📍 ' + location + ' ✕</span>';
+            if ( category ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="category">🏷 ' + category + ' ✕</span>';
+            if ( dateFrom ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="date_from">Dal: ' + pmpFmtDate( dateFrom ) + ' ✕</span>';
+            if ( dateTo )   html += '<span class="pmp-active-tag pmp-active-rm" data-clear="date_to">Al: '  + pmpFmtDate( dateTo )   + ' ✕</span>';
+            $af.html( html ).show();
         } else {
             $af.hide().empty();
         }

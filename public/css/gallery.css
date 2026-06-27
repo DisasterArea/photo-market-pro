@@ -224,6 +224,13 @@ body input.pmp-filter-select:focus {
   padding: 3px 10px;
   border-radius: 20px;
 }
+.pmp-active-rm {
+  cursor: pointer;
+  transition: background .15s;
+}
+.pmp-active-rm:hover {
+  background: rgba(232,160,32,.35);
+}
 
 /* ── Grid ─────────────────────────────────────────── */
 .pmp-masonry {
