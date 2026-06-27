@@ -232,7 +232,7 @@ jQuery(function($){
             reader.onload = function(e) {
                 var img = new Image();
                 img.onload = function() {
-                    var maxW = 1200, maxH = 1200;
+                    var maxW = 800, maxH = 800;
                     var w = img.width, h = img.height;
                     if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
                     if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
@@ -242,7 +242,7 @@ jQuery(function($){
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(img, 0, 0, w, h);
-                    canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.85);
+                    canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.97);
                 };
                 img.onerror = function() { callback(null); };
                 img.src = e.target.result;
