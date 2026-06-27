@@ -97,31 +97,31 @@ class PMP_Public {
           <div class="pmp-filters" id="pmp-filters">
             <div class="pmp-filter-row">
               <div class="pmp-filter-group">
-                <label class="pmp-filter-label">📍 Helyszín</label>
+                <label class="pmp-filter-label">📍 Località</label>
                 <div class="pmp-select-wrap">
                   <select id="pmp-f-location" class="pmp-filter-select">
-                    <option value="">Válassz</option>
+                    <option value="">Scegli</option>
                   </select>
                 </div>
               </div>
               <div class="pmp-filter-group">
-                <label class="pmp-filter-label">🏷 Kategória</label>
+                <label class="pmp-filter-label">🏷 Categoria</label>
                 <div class="pmp-select-wrap">
                   <select id="pmp-f-category" class="pmp-filter-select">
-                    <option value="">Válassz</option>
+                    <option value="">Scegli</option>
                   </select>
                 </div>
               </div>
               <div class="pmp-filter-group">
-                <label class="pmp-filter-label">📅 Dátumtól</label>
+                <label class="pmp-filter-label">📅 Data da</label>
                 <input type="date" id="pmp-f-date-from" class="pmp-filter-select pmp-date-input">
               </div>
               <div class="pmp-filter-group">
-                <label class="pmp-filter-label">📅 Dátumig</label>
+                <label class="pmp-filter-label">📅 Data a</label>
                 <input type="date" id="pmp-f-date-to" class="pmp-filter-select pmp-date-input">
               </div>
               <div class="pmp-filter-group pmp-filter-btns">
-                <button class="pmp-btn-reset" id="pmp-reset-filter">✕ Törlés</button>
+                <button class="pmp-btn-reset" id="pmp-reset-filter">✕ Cancella</button>
               </div>
             </div>
             <div class="pmp-active-filters" id="pmp-active-filters" style="display:none;"></div>
@@ -129,10 +129,10 @@ class PMP_Public {
 
           <div class="pmp-masonry" id="pmp-masonry">
             <?php foreach ( $photos as $p ) echo self::render_card( $p ); ?>
-            <?php if ( empty( $photos ) ) echo '<p class="pmp-no-results">Még nincsenek fotók.</p>'; ?>
+            <?php if ( empty( $photos ) ) echo '<p class="pmp-no-results">Nessuna foto disponibile.</p>'; ?>
           </div>
           <div class="pmp-gallery-loading" id="pmp-gallery-loading" style="display:none;">
-            <div class="pmp-spinner-wrap"><span class="pmp-spinner"></span><span>Betöltés...</span></div>
+            <div class="pmp-spinner-wrap"><span class="pmp-spinner"></span><span>Caricamento...</span></div>
           </div>
         </div>
         <?php return ob_get_clean();
@@ -160,7 +160,7 @@ class PMP_Public {
               <div class="pmp-card-tags">
                 <?php if ( $photo['location'] ): ?><span class="pmp-tag" data-filter="location" data-value="<?php echo esc_attr( $photo['location'] ); ?>" title="Szűrés helyszínre">📍 <?php echo esc_html( $photo['location'] ); ?></span><?php endif; ?>
                 <?php if ( $photo['category'] ): ?><span class="pmp-tag" data-filter="category" data-value="<?php echo esc_attr( $photo['category'] ); ?>" title="Szűrés kategóriára">🏷 <?php echo esc_html( $photo['category'] ); ?></span><?php endif; ?>
-                <?php if ( $photo['shot_date'] ): ?><span class="pmp-tag" data-filter="date" data-value="<?php echo esc_attr( $photo['shot_date'] ); ?>" title="Szűrés dátumra">📅 <?php echo esc_html( date_i18n( 'Y.m.d', strtotime( $photo['shot_date'] ) ) ); ?></span><?php endif; ?>
+                <?php if ( $photo['shot_date'] ): ?><span class="pmp-tag" data-filter="date" data-value="<?php echo esc_attr( $photo['shot_date'] ); ?>" title="Szűrés dátumra">📅 <?php echo esc_html( date_i18n( 'd/m/Y', strtotime( $photo['shot_date'] ) ) ); ?></span><?php endif; ?>
               </div>
             </div>
             <div class="pmp-card-bottom">
@@ -193,7 +193,7 @@ class PMP_Public {
 
         $html = '';
         foreach ( $photos as $p ) $html .= self::render_card( $p );
-        if ( ! $html ) $html = '<p class="pmp-no-results">Nincs találat a megadott szűrőkre.</p>';
+        if ( ! $html ) $html = '<p class="pmp-no-results">Nessun risultato per i filtri selezionati.</p>';
 
         wp_send_json_success( [ 'html' => $html, 'count' => count( $photos ) ] );
     }

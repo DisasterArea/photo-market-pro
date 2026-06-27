@@ -124,7 +124,7 @@ class PMP_Photo {
 
         // Build slug-style base
         $loc_slug  = strtolower( sanitize_title( $location ) );
-        $date_slug = $shot_date ? str_replace( '-', '', $shot_date ) : date( 'Ymd' );
+        $date_slug = $shot_date ? date( 'dmY', strtotime( $shot_date ) ) : date( 'dmY' );
         $base      = $loc_slug . '_' . $date_slug;
 
         // Find existing count for this base (excluding current photo on edit)

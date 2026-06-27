@@ -143,8 +143,8 @@ jQuery(function($){
         var tags = [];
         if ( location ) tags.push( '📍 ' + location );
         if ( category ) tags.push( '🏷 ' + category );
-        if ( dateFrom ) tags.push( 'Tól: ' + dateFrom );
-        if ( dateTo   ) tags.push( 'Ig: '  + dateTo );
+        if ( dateFrom ) tags.push( 'Dal: ' + dateFrom );
+        if ( dateTo   ) tags.push( 'Al: '  + dateTo );
 
         var $af = $( '#pmp-active-filters' );
         if ( tags.length ) {
@@ -174,7 +174,7 @@ jQuery(function($){
                 if ( res && res.success ) {
                     $( '#pmp-masonry' ).html( res.data.html );
                 } else {
-                    $( '#pmp-masonry' ).html( '<p class="pmp-no-results">Hiba a szűrés közben.</p>' );
+                    $( '#pmp-masonry' ).html( '<p class="pmp-no-results">Errore durante il filtraggio.</p>' );
                 }
             },
             error: function( xhr, status, err ) {
