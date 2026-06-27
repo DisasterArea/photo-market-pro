@@ -9,6 +9,21 @@ class PMP_Order {
         add_filter( 'woocommerce_email_classes',           [ __CLASS__, 'register_email' ] );
         add_action( 'add_meta_boxes',                      [ __CLASS__, 'register_order_meta_box' ] );
         add_action( 'woocommerce_email_after_order_table', [ __CLASS__, 'inject_download_links_email' ], 10, 4 );
+        add_filter( 'woocommerce_email_enabled_customer_processing_order', [ __CLASS__, 'suppress_processing_email' ], 10, 2 );
+    }
+
+    /* Suppress processing email for PMP orders without editing options */
+    public static function suppress_processing_email( $enabled, $order ) {
+        if ( ! $order ) return $enabled;
+        $has_pmp = false; $has_edits = false;
+        foreach ( $order->get_items() as $item ) {
+            $product = $item->get_product();
+            if ( ! $product || ! $product->get_meta( '_pmp_photo' ) ) continue;
+            $has_pmp = true;
+            if ( $item->get_meta( '_pmp_edit_option_ids' ) ) { $has_edits = true; break; }
+        }
+        if ( $has_pmp && ! $has_edits ) return false;
+        return $enabled;
     }
 
     /* Auto-complete orders with no editing options */
