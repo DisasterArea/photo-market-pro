@@ -187,15 +187,17 @@ class PMP_Public {
         $category  = sanitize_text_field( $_POST['category']  ?? '' );
         $date_from = sanitize_text_field( $_POST['date_from'] ?? '' );
         $date_to   = sanitize_text_field( $_POST['date_to']   ?? '' );
-        $count     = max( 1, intval( $_POST['count'] ?? 6 ) );
+        $count     = max( 1, intval( $_POST['count'] ?? 25 ) );
+        $offset    = max( 0, intval( $_POST['offset'] ?? 0 ) );
 
-        $photos = self::query_photos( compact( 'location', 'category', 'date_from', 'date_to' ), $count );
+        $filters = compact( 'location', 'category', 'date_from', 'date_to' );
+        $photos  = self::query_photos( $filters, $count, $offset );
 
         $html = '';
         foreach ( $photos as $p ) $html .= self::render_card( $p );
-        if ( ! $html ) $html = '<p class="pmp-no-results">Nessun risultato per i filtri selezionati.</p>';
+        if ( ! $html && $offset === 0 ) $html = '<p class="pmp-no-results">Nessun risultato per i filtri selezionati.</p>';
 
-        wp_send_json_success( [ 'html' => $html, 'count' => count( $photos ) ] );
+        wp_send_json_success( [ 'html' => $html, 'count' => count( $photos ), 'has_more' => count( $photos ) === $count ] );
     }
 
     /* ── AJAX: chained filter options ───────────────────────── */
@@ -234,7 +236,7 @@ class PMP_Public {
 
     /* ── Query helper ───────────────────────────────────────── */
 
-    private static function query_photos( $filters, $count ) {
+    private static function query_photos( $filters, $count, $offset = 0 ) {
         global $wpdb;
         $where = "WHERE 1=1";
         if ( ! empty( $filters['location'] ) )  $where .= $wpdb->prepare( " AND location = %s",   $filters['location'] );
@@ -242,7 +244,7 @@ class PMP_Public {
         if ( ! empty( $filters['date_from'] ) ) $where .= $wpdb->prepare( " AND shot_date >= %s", $filters['date_from'] );
         if ( ! empty( $filters['date_to'] ) )   $where .= $wpdb->prepare( " AND shot_date <= %s", $filters['date_to'] );
         return $wpdb->get_results(
-            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}pmp_photos $where ORDER BY RAND() LIMIT %d", $count ),
+            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}pmp_photos $where ORDER BY shot_date DESC, id DESC LIMIT %d OFFSET %d", $count, $offset ),
             ARRAY_A
         );
     }

@@ -5,7 +5,10 @@ jQuery(function($){
     var nonce   = cfg.nonce;
     var $wrap   = $('.pmp-gallery-wrap');
     if ( !$wrap.length ) return;
-    var count = parseInt( $wrap.data('count') ) || 6;
+    var count    = parseInt( $wrap.data('count') ) || 6;
+    var pageSize = 25;
+    var curPage  = 0;
+    var curFilters = {};
 
     /* ── Boot: load dropdowns ──────────────────────── */
     refreshOptions();
@@ -154,60 +157,73 @@ jQuery(function($){
         return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : d;
     }
 
-    /* ── doFilter: reload masonry cards ────────────────────── */
+    /* ── doFilter: reload masonry cards (reset to page 1) ──── */
     function doFilter() {
-        var location  = $( '#pmp-f-location'  ).val() || '';
-        var category  = $( '#pmp-f-category'  ).val() || '';
-        var dateFrom  = $( '#pmp-f-date-from' ).val() || '';
-        var dateTo    = $( '#pmp-f-date-to'   ).val() || '';
-
-        var tags = [];
-        if ( location ) tags.push( '📍 ' + location );
-        if ( category ) tags.push( '🏷 ' + category );
-        if ( dateFrom ) tags.push( 'Dal: ' + pmpFmtDate( dateFrom ) );
-        if ( dateTo   ) tags.push( 'Al: '  + pmpFmtDate( dateTo ) );
+        curFilters = {
+            location:  $( '#pmp-f-location'  ).val() || '',
+            category:  $( '#pmp-f-category'  ).val() || '',
+            date_from: $( '#pmp-f-date-from' ).val() || '',
+            date_to:   $( '#pmp-f-date-to'   ).val() || '',
+        };
+        curPage = 0;
 
         var $af = $( '#pmp-active-filters' );
-        if ( tags.length ) {
-            var html = '';
-            if ( location ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="location">📍 ' + location + ' ✕</span>';
-            if ( category ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="category">🏷 ' + category + ' ✕</span>';
-            if ( dateFrom ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="date_from">Dal: ' + pmpFmtDate( dateFrom ) + ' ✕</span>';
-            if ( dateTo )   html += '<span class="pmp-active-tag pmp-active-rm" data-clear="date_to">Al: '  + pmpFmtDate( dateTo )   + ' ✕</span>';
-            $af.html( html ).show();
-        } else {
-            $af.hide().empty();
-        }
+        var html = '';
+        if ( curFilters.location ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="location">📍 ' + curFilters.location + ' ✕</span>';
+        if ( curFilters.category ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="category">🏷 ' + curFilters.category + ' ✕</span>';
+        if ( curFilters.date_from ) html += '<span class="pmp-active-tag pmp-active-rm" data-clear="date_from">Dal: ' + pmpFmtDate( curFilters.date_from ) + ' ✕</span>';
+        if ( curFilters.date_to )   html += '<span class="pmp-active-tag pmp-active-rm" data-clear="date_to">Al: '  + pmpFmtDate( curFilters.date_to )   + ' ✕</span>';
+        html ? $af.html( html ).show() : $af.hide().empty();
 
+        $( '#pmp-masonry' ).empty();
+        $( '#pmp-load-more-wrap' ).remove();
+        loadPage( false );
+    }
+
+    /* ── loadPage: fetch next batch and append ──────────────── */
+    function loadPage( append ) {
+        var offset = curPage * pageSize;
         $( '#pmp-gallery-loading' ).show();
-        $( '#pmp-masonry' ).css( 'opacity', .35 );
 
         $.ajax({
             url:  ajaxurl,
             type: 'POST',
-            data: {
+            data: $.extend( {}, curFilters, {
                 action: 'pmp_v2_gallery_filter',
-                nonce:     nonce,
-                location:  location,
-                category:  category,
-                date_from: dateFrom,
-                date_to:   dateTo,
-                count:     count,
-            },
+                nonce:   nonce,
+                count:   pageSize,
+                offset:  offset,
+            }),
             success: function( res ) {
                 $( '#pmp-gallery-loading' ).hide();
-                $( '#pmp-masonry' ).css( 'opacity', 1 );
-                if ( res && res.success ) {
-                    $( '#pmp-masonry' ).html( res.data.html );
-                } else {
-                    $( '#pmp-masonry' ).html( '<p class="pmp-no-results">Errore durante il filtraggio.</p>' );
+                if ( !res || !res.success ) {
+                    if ( !append ) $( '#pmp-masonry' ).html( '<p class="pmp-no-results">Errore durante il filtraggio.</p>' );
+                    return;
                 }
+                var d = res.data;
+                if ( append ) {
+                    $( '#pmp-masonry' ).append( d.html );
+                } else {
+                    $( '#pmp-masonry' ).html( d.html );
+                }
+                $( '#pmp-load-more-wrap' ).remove();
+                if ( d.has_more ) {
+                    $( '#pmp-masonry' ).after(
+                        '<div id="pmp-load-more-wrap" style="text-align:center;margin:24px 0;">' +
+                        '<button class="pmp-btn-load-more" id="pmp-load-more-btn">Carica altri →</button>' +
+                        '</div>'
+                    );
+                }
+                curPage++;
             },
-            error: function( xhr, status, err ) {
+            error: function() {
                 $( '#pmp-gallery-loading' ).hide();
-                $( '#pmp-masonry' ).css( 'opacity', 1 );
-                console.error( '[PMP] doFilter error:', status, err, xhr.responseText );
             }
         });
     }
+
+    /* ── Load more button ───────────────────────────────────── */
+    $( document ).on( 'click', '#pmp-load-more-btn', function() {
+        loadPage( true );
+    });
 });
