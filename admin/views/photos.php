@@ -110,7 +110,7 @@
           </datalist>
           <label>Fénykép dátuma</label>
           <input type="date" id="pmp-field-shot-date" class="widefat">
-          <label>Ár (Ft) *</label>
+          <label>Ár (EUR) *</label>
           <input type="number" id="pmp-field-price" class="widefat" min="0" step="100" placeholder="4990">
         </div>
       </div>
@@ -134,7 +134,7 @@
           <?php foreach($edit_options as $opt): ?>
           <label class="pmp-opt-check">
             <input type="checkbox" class="pmp-opt-cb" value="<?php echo esc_attr($opt['id']); ?>">
-            <?php echo esc_html($opt['name']); ?> <small>(+<?php echo number_format($opt['price'],0,',','.'); ?> Ft)</small>
+            <?php echo esc_html($opt['name']); ?> <small>(+<?php echo number_format($opt['price'],2,',','.'); ?> €)</small>
           </label>
           <?php endforeach; ?>
           <?php if(empty($edit_options)): ?><p style="color:#999;">Nincsenek opciók. <a href="<?php echo admin_url('admin.php?page=pmp-edit-options'); ?>">Hozzáad</a></p><?php endif; ?>
@@ -166,7 +166,7 @@
       <div id="pmp-bulk-preview" class="pmp-bulk-preview-list"></div>
       <div class="pmp-form-row" style="margin-top:16px;">
         <div class="pmp-form-col">
-          <label>Alap ár (Ft)</label>
+          <label>Alap ár (EUR)</label>
           <input type="number" id="pmp-bulk-price" class="widefat" min="0" step="100" placeholder="4990">
         </div>
         <div class="pmp-form-col">

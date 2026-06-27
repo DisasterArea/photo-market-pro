@@ -165,7 +165,7 @@ class PMP_Public {
             </div>
             <div class="pmp-card-bottom">
               <?php if ( $price > 0 ): ?>
-                <span class="pmp-card-price"><?php echo number_format( (float) $price, 0, ',', '.' ); ?> Ft</span>
+                <span class="pmp-card-price"><?php echo number_format( (float) $price, 2, ',', '.' ); ?> €</span>
               <?php endif; ?>
               <span class="pmp-card-cta">🛒</span>
             </div>

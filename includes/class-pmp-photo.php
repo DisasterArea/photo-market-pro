@@ -32,7 +32,7 @@ class PMP_Photo {
             echo '<input type="checkbox" name="pmp_edit_option[]" value="' . esc_attr( $opt['id'] ) . '" class="pmp-edit-option-cb" data-price="' . esc_attr( $opt['price'] ) . '"> ';
             echo '<strong>' . esc_html( $opt['name'] ) . '</strong>';
             if ( $opt['description'] ) echo ' <span class="pmp-edit-desc">– ' . esc_html( $opt['description'] ) . '</span>';
-            echo ' <span class="pmp-edit-price">+' . number_format( $opt['price'], 0, ',', '.' ) . ' Ft</span>';
+            echo ' <span class="pmp-edit-price">+' . number_format( $opt['price'], 2, ',', '.' ) . ' €</span>';
             echo '</label>';
         }
         echo '<div class="pmp-edit-note-wrap">';
@@ -45,13 +45,13 @@ class PMP_Photo {
         <script>
         (function(){
             var base = <?php echo floatval( $product->get_price() ); ?>;
-            function fmt(n){ return n.toLocaleString('hu-HU'); }
+            function fmt(n){ return n.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}); }
             function update(){
                 var extra = 0;
                 document.querySelectorAll('.pmp-edit-option-cb:checked').forEach(function(cb){ extra += parseFloat(cb.dataset.price)||0; });
                 var el = document.getElementById('pmp-price-preview');
                 el.innerHTML = extra > 0
-                    ? 'Opzioni: <strong>+' + fmt(extra) + ' Ft</strong> &nbsp;→&nbsp; Totale: <strong>' + fmt(base+extra) + ' Ft</strong>'
+                    ? 'Opzioni: <strong>+' + fmt(extra) + ' €</strong> &nbsp;→&nbsp; Totale: <strong>' + fmt(base+extra) + ' €</strong>'
                     : '';
             }
             document.querySelectorAll('.pmp-edit-option-cb').forEach(function(cb){ cb.addEventListener('change', update); });

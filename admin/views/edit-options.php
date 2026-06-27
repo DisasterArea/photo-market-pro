@@ -14,7 +14,7 @@
           <span class="pmp-drag-handle">☰</span>
           <div class="pmp-option-info">
             <strong><?php echo esc_html( $opt['name'] ); ?></strong>
-            <span class="pmp-option-price"><?php echo number_format( $opt['price'], 0, ',', '.' ); ?> Ft</span>
+            <span class="pmp-option-price"><?php echo number_format( $opt['price'], 2, ',', '.' ); ?> €</span>
             <?php if ( ! $opt['active'] ) echo '<span class="pmp-badge-inactive">Inaktív</span>'; ?>
             <?php if ( $opt['description'] ) : ?>
               <p class="pmp-option-desc"><?php echo esc_html( $opt['description'] ); ?></p>
@@ -50,7 +50,7 @@
         <label>Leírás</label>
         <textarea id="pmp-option-desc" class="widefat" rows="2" placeholder="Rövid leírás a vevőnek..."></textarea>
 
-        <label>Ár (Ft) *</label>
+        <label>Ár (EUR) *</label>
         <input type="number" id="pmp-option-price" class="widefat" min="0" step="100" placeholder="2990">
 
         <label>
