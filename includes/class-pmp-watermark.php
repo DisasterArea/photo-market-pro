@@ -70,10 +70,10 @@ class PMP_Watermark {
                 $font_size = intval( $font_size * 0.85 );
             }
 
-            // Position center of text at 25% along diagonal from lower-left corner
+            // Position center of text at 75% along diagonal from lower-left (= upper-left area)
             $diag_avail = $s - 2 * $margin;
-            $cx = $margin + $diag_avail * 0.25;
-            $cy = ( $s - $margin ) - $diag_avail * 0.25;
+            $cx = $margin + $diag_avail * 0.75;
+            $cy = ( $s - $margin ) - $diag_avail * 0.75;
             $tx = intval( $cx - $tw / ( 2.0 * sqrt(2) ) );
             $ty = intval( $cy + $tw / ( 2.0 * sqrt(2) ) );
             file_put_contents( PMP_DIR . 'wm-debug.log', date('H:i:s') . " FINAL font=$font_size tw=$tw th=$th tx=$tx ty=$ty s=$s w=$w h=$h\n", FILE_APPEND );
