@@ -165,9 +165,14 @@ class PMP_Photo {
         if ( ! $product ) return;
         if ( ! self::get_by_product( $product->get_id() ) ) return;
 
-        $back_url = wc_get_page_permalink( 'shop' );
         $referer  = wp_get_referer();
-        if ( $referer && strpos( $referer, home_url() ) !== false ) $back_url = $referer;
+        if ( $referer && strpos( $referer, home_url() ) !== false ) {
+            $back_url = $referer;
+        } else {
+            $back_url = home_url( '/' );
+        }
+        // Strip existing fragment, add #search
+        $back_url = preg_replace( '/#.*$/', '', $back_url ) . '#search';
 
         echo '<a href="' . esc_url( $back_url ) . '" class="pmp-back-btn">← Torna alla ricerca</a>';
     }

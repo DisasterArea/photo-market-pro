@@ -579,7 +579,9 @@ body input.pmp-filter-select:focus {
 }
 
 .pmp-back-btn {
-  display: inline-block;
+  display: block;
+  clear: both;
+  width: 100%;
   margin-top: 14px;
   color: #777;
   font-size: 13px;
