@@ -29,14 +29,22 @@ class PMP_Watermark {
 
     private static function apply_imagick( $file, $mime ) {
         try {
-            $img = new Imagick( $file );
-            $w   = $img->getImageWidth();
-            $h   = $img->getImageHeight();
-            $s   = min( $w, $h );
+            $img    = new Imagick( $file );
+            $w      = $img->getImageWidth();
+            $h      = $img->getImageHeight();
+            $s      = min( $w, $h );
+            $margin = intval( $s * 0.05 );
 
-            $font_size = intval( $s * 0.055 );
-            $cx        = intval( $s * 0.35 );
-            $cy        = intval( $s * 0.35 );
+            // Scale font so text width = diagonal length from (margin,s-margin) to (s-margin,margin)
+            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 );
+            $draw_ref  = new ImagickDraw();
+            $draw_ref->setFontSize( 40 );
+            foreach ( [ 'Arial', 'DejaVu-Sans', 'Liberation-Sans', 'Helvetica' ] as $f ) {
+                try { $draw_ref->setFont( $f ); break; } catch ( Exception $e ) { }
+            }
+            $metrics   = $img->queryFontMetrics( $draw_ref, self::TEXT );
+            $ref_tw    = $metrics['textWidth'] ?? 400;
+            $font_size = max( 14, intval( 40 * $diag_len / $ref_tw ) );
 
             $draw = new ImagickDraw();
             $draw->setFontSize( $font_size );
@@ -46,7 +54,10 @@ class PMP_Watermark {
                 try { $draw->setFont( $f ); break; } catch ( Exception $e ) { }
             }
 
-            $img->annotateImage( $draw, $cx, $cy, -45, self::TEXT );
+            // Imagick annotateImage origin: top-left of text bounding box + angle CW
+            // Place center at (s/2, s/2)
+            $img->annotateImage( $draw, intval( $s / 2 ), intval( $s / 2 ), -45, self::TEXT );
+
             if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
             $img->writeImage( $file );
             $img->destroy();
@@ -64,23 +75,39 @@ class PMP_Watermark {
         }
         if ( ! $src ) return;
 
-        $w = imagesx( $src );
-        $h = imagesy( $src );
-        $s = min( $w, $h );
+        $w      = imagesx( $src );
+        $h      = imagesy( $src );
+        $s      = min( $w, $h );
+        $margin = intval( $s * 0.05 );
 
-        $font_size = intval( $s * 0.055 );
+        // Diagonal length from (margin, s-margin) → (s-margin, margin)
+        $diag_len = ( $s - 2 * $margin ) * sqrt( 2 );
 
-        // Target center in upper-left area on 45° line
-        $cx = intval( $s * 0.35 );
-        $cy = intval( $s * 0.35 );
+        // Measure text width at reference size (0° = no rotation distortion)
+        $b_ref = imagettfbbox( 40, 0, $font, self::TEXT );
+        $tw_ref = abs( $b_ref[2] - $b_ref[0] );
+        $font_size = max( 14, intval( 40 * $diag_len / $tw_ref ) );
 
-        // Get bbox at actual angle to find center offset
-        $bbox = imagettfbbox( $font_size, 45, $font, self::TEXT );
-        $bcx  = ( $bbox[0] + $bbox[2] + $bbox[4] + $bbox[6] ) / 4;
-        $bcy  = ( $bbox[1] + $bbox[3] + $bbox[5] + $bbox[7] ) / 4;
+        // Measure actual text at final size
+        $b_act = imagettfbbox( $font_size, 0, $font, self::TEXT );
+        $tw    = abs( $b_act[2] - $b_act[0] );
+        $th    = abs( $b_act[7] - $b_act[1] );
 
-        $tx = intval( $cx - $bcx );
-        $ty = intval( $cy - $bcy );
+        /*
+         * GD imagettftext with angle=45 (CCW):
+         * Baseline starts at (tx, ty) and goes upper-right.
+         * We want start of visible text near (margin, s-margin)
+         * and end near (s-margin, margin).
+         *
+         * At angle=45, the baseline origin (tx,ty) is slightly below
+         * the visual text due to descenders — offset by ~th/2 downward
+         * perpendicular to baseline direction.
+         *
+         * Simple: set tx = margin, ty = s - margin
+         * This anchors the START of the text in the lower-left corner of the s×s square.
+         */
+        $tx = $margin;
+        $ty = $s - $margin;
 
         $alpha  = intval( 127 * ( 1 - self::OPACITY ) );
         $white  = imagecolorallocatealpha( $src, 255, 255, 255, $alpha );
