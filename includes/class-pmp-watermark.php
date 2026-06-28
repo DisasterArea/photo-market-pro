@@ -4,8 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class PMP_Watermark {
 
     const TEXT    = '© ArcoScatto.it';
-    const OPACITY = 0.20; // 20%
-    const ANGLE   = -35;  // degrees, bottom-left → top-right diagonal
+    const OPACITY = 0.20;
+    const ANGLE   = 35; // GD rotates CCW, +35 = bottom-left→top-right diagonal
 
     public static function init() {
         add_filter( 'wp_handle_upload', [ __CLASS__, 'apply' ], 10, 2 );
@@ -33,7 +33,6 @@ class PMP_Watermark {
         try {
             $img  = new Imagick( $file );
             $w    = $img->getImageWidth();
-            $h    = $img->getImageHeight();
             $size = max( 28, intval( $w * 0.042 ) );
 
             $draw = new ImagickDraw();
@@ -41,20 +40,17 @@ class PMP_Watermark {
             $draw->setFillColor( new ImagickPixel( 'rgba(255,255,255,' . self::OPACITY . ')' ) );
             $draw->setTextAntialias( true );
 
-            // Try common system fonts
             foreach ( [ 'Arial', 'DejaVu-Sans', 'Liberation-Sans', 'Helvetica' ] as $f ) {
-                try { $draw->setFont( $f ); break; } catch ( Exception $e ) { /* try next */ }
+                try { $draw->setFont( $f ); break; } catch ( Exception $e ) { /* next */ }
             }
 
-            // Position: upper-left third, below where card tags would sit
+            $h = $img->getImageHeight();
             $x = intval( $w * 0.10 );
             $y = intval( $h * 0.34 );
 
-            $img->annotateImage( $draw, $x, $y, self::ANGLE, self::TEXT );
+            $img->annotateImage( $draw, $x, $y, -self::ANGLE, self::TEXT );
 
-            if ( $mime === 'image/jpeg' ) {
-                $img->setImageCompressionQuality( 92 );
-            }
+            if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
             $img->writeImage( $file );
             $img->destroy();
         } catch ( Exception $e ) {
@@ -64,75 +60,69 @@ class PMP_Watermark {
 
     /* ── GD path ──────────────────────────────────────── */
     private static function apply_gd( $file, $mime ) {
-        try {
-            if ( $mime === 'image/jpeg' ) {
-                $src = imagecreatefromjpeg( $file );
-            } else {
-                $src = imagecreatefrompng( $file );
-                imagesavealpha( $src, true );
-            }
-            if ( ! $src ) return;
+        $font = self::find_font();
+        if ( ! $font || ! file_exists( $font ) ) return;
 
-            $w = imagesx( $src );
-            $h = imagesy( $src );
-
-            $font      = self::find_font();
-            $font_size = max( 20, intval( $w * 0.042 ) );
-
-            // Render text onto a temp canvas, then rotate + composite
-            $bbox = imagettfbbox( $font_size, 0, $font, self::TEXT );
-            $tw   = abs( $bbox[4] - $bbox[0] );
-            $th   = abs( $bbox[5] - $bbox[1] );
-
-            // Create text layer (RGBA)
-            $layer = imagecreatetruecolor( $tw + 10, $th + 10 );
-            imagealphablending( $layer, false );
-            imagesavealpha( $layer, true );
-            $transparent = imagecolorallocatealpha( $layer, 0, 0, 0, 127 );
-            imagefill( $layer, 0, 0, $transparent );
-            imagealphablending( $layer, true );
-
-            // White text at 20% opacity → alpha 0–127 where 0=opaque, 127=transparent
-            // 20% opacity = 80% transparent → alpha = intval(127 * 0.80) = 102
-            $alpha    = intval( 127 * ( 1 - self::OPACITY ) );
-            $color    = imagecolorallocatealpha( $layer, 255, 255, 255, $alpha );
-            $shadow_c = imagecolorallocatealpha( $layer, 0, 0, 0, min( 127, $alpha + 20 ) );
-
-            // Shadow (+1,+1) for legibility
-            imagettftext( $layer, $font_size, 0, 6, $th + 1, $shadow_c, $font, self::TEXT );
-            imagettftext( $layer, $font_size, 0, 5, $th,     $color,    $font, self::TEXT );
-
-            // Rotate text layer
-            $rotated = imagerotate( $layer, -self::ANGLE, $transparent );
-            imagesavealpha( $rotated, true );
-
-            $rw = imagesx( $rotated );
-            $rh = imagesy( $rotated );
-
-            // Destination: upper-left third (below tag area)
-            $dx = intval( $w * 0.08 );
-            $dy = intval( $h * 0.22 );
-
-            // Composite onto source
-            imagealphablending( $src, true );
-            imagecopy( $src, $rotated, $dx, $dy, 0, 0, $rw, $rh );
-
-            if ( $mime === 'image/jpeg' ) {
-                imagejpeg( $src, $file, 92 );
-            } else {
-                imagepng( $src, $file, 9 );
-            }
-
-            imagedestroy( $src );
-            imagedestroy( $layer );
-            imagedestroy( $rotated );
-        } catch ( Exception $e ) {
-            // silent
+        if ( $mime === 'image/jpeg' ) {
+            $src = @imagecreatefromjpeg( $file );
+        } else {
+            $src = @imagecreatefrompng( $file );
         }
+        if ( ! $src ) return;
+
+        $w         = imagesx( $src );
+        $h         = imagesy( $src );
+        $font_size = max( 20, intval( $w * 0.042 ) );
+
+        // Measure text
+        $bbox = imagettfbbox( $font_size, 0, $font, self::TEXT );
+        $tw   = abs( $bbox[4] - $bbox[0] ) + 20;
+        $th   = abs( $bbox[5] - $bbox[1] ) + 20;
+
+        // Text layer (transparent background)
+        $layer = imagecreatetruecolor( $tw, $th );
+        imagealphablending( $layer, false );
+        imagesavealpha( $layer, true );
+        $bg = imagecolorallocatealpha( $layer, 0, 0, 0, 127 ); // fully transparent
+        imagefill( $layer, 0, 0, $bg );
+        imagealphablending( $layer, true );
+
+        // 20% opacity = alpha 102 (GD: 0=opaque, 127=transparent)
+        $white  = imagecolorallocatealpha( $layer, 255, 255, 255, 102 );
+        $shadow = imagecolorallocatealpha( $layer, 0, 0, 0, 120 );
+
+        // Draw with 1px shadow for legibility
+        imagettftext( $layer, $font_size, 0, 11, $th - 6, $shadow, $font, self::TEXT );
+        imagettftext( $layer, $font_size, 0, 10, $th - 7, $white,  $font, self::TEXT );
+
+        // Rotate (GD CCW, +35 = our bottom-left→top-right diagonal)
+        $rotated = imagerotate( $layer, self::ANGLE, $bg, 1 );
+        imagesavealpha( $rotated, true );
+
+        $rw = imagesx( $rotated );
+        $rh = imagesy( $rotated );
+
+        // Composite onto photo
+        $dx = intval( $w * 0.06 );
+        $dy = intval( $h * 0.18 );
+        imagealphablending( $src, true );
+        imagecopy( $src, $rotated, $dx, $dy, 0, 0, $rw, $rh );
+
+        if ( $mime === 'image/jpeg' ) {
+            imagejpeg( $src, $file, 92 );
+        } else {
+            imagesavealpha( $src, true );
+            imagepng( $src, $file, 9 );
+        }
+
+        imagedestroy( $src );
+        imagedestroy( $layer );
+        imagedestroy( $rotated );
     }
 
     private static function find_font() {
         $candidates = [
+            PMP_DIR . 'assets/fonts/LiberationSans-Regular.ttf',
             '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
             '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
@@ -142,7 +132,6 @@ class PMP_Watermark {
         foreach ( $candidates as $f ) {
             if ( file_exists( $f ) ) return $f;
         }
-        // Last resort: bundle a minimal font with the plugin
-        return PMP_DIR . 'assets/fonts/LiberationSans-Regular.ttf';
+        return '';
     }
 }
