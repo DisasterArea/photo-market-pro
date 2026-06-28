@@ -88,26 +88,19 @@ class PMP_Watermark {
         $tw_ref = abs( $b_ref[2] - $b_ref[0] );
         $font_size = max( 14, intval( 40 * $diag_len / $tw_ref ) );
 
-        // Measure actual text at final size
-        $b_act = imagettfbbox( $font_size, 0, $font, self::TEXT );
-        $tw    = abs( $b_act[2] - $b_act[0] );
-        $th    = abs( $b_act[7] - $b_act[1] );
-
-        /*
-         * GD imagettftext with angle=45 (CCW):
-         * Baseline starts at (tx, ty) and goes upper-right.
-         * We want start of visible text near (margin, s-margin)
-         * and end near (s-margin, margin).
-         *
-         * At angle=45, the baseline origin (tx,ty) is slightly below
-         * the visual text due to descenders — offset by ~th/2 downward
-         * perpendicular to baseline direction.
-         *
-         * Simple: set tx = margin, ty = s - margin
-         * This anchors the START of the text in the lower-left corner of the s×s square.
-         */
+        // Anchor: text starts at lower-left of the s×s square, goes 45° upper-right
         $tx = $margin;
         $ty = $s - $margin;
+
+        // Safety loop: shrink font until text end stays within image bounds
+        for ( $i = 0; $i < 10; $i++ ) {
+            $b_act = imagettfbbox( $font_size, 0, $font, self::TEXT );
+            $tw    = abs( $b_act[2] - $b_act[0] );
+            $end_x = $tx + intval( $tw * 0.707 );
+            $end_y = $ty - intval( $tw * 0.707 );
+            if ( $end_x <= ( $w - $margin ) && $end_y >= $margin ) break;
+            $font_size = intval( $font_size * 0.85 );
+        }
 
         $alpha  = intval( 127 * ( 1 - self::OPACITY ) );
         $white  = imagecolorallocatealpha( $src, 255, 255, 255, $alpha );
