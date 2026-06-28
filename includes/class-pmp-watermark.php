@@ -51,8 +51,8 @@ class PMP_Watermark {
             $ref_tw  = $metrics['textWidth'] ?? 0;
             $ref_th  = $metrics['textHeight'] ?? 0;
 
-            // Target: text fills 40% of the diagonal of the s×s square
-            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 ) * 0.40;
+            // Target: text fills 65% of the diagonal of the s×s square
+            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 ) * 0.65;
             $font_size = ( $ref_tw > 0 ) ? intval( 40 * $diag_len / $ref_tw ) : 60;
             $font_size = max( 14, $font_size );
 
@@ -70,10 +70,10 @@ class PMP_Watermark {
                 $font_size = intval( $font_size * 0.85 );
             }
 
-            // Position center of text at 60% along diagonal from lower-left (slightly upper-left of center)
+            // Center text on the diagonal
             $diag_avail = $s - 2 * $margin;
-            $cx = $margin + $diag_avail * 0.60;
-            $cy = ( $s - $margin ) - $diag_avail * 0.60;
+            $cx = $s / 2.0;
+            $cy = $s / 2.0;
             $tx = intval( $cx - $tw / ( 2.0 * sqrt(2) ) );
             $ty = intval( $cy + $tw / ( 2.0 * sqrt(2) ) );
             file_put_contents( PMP_DIR . 'wm-debug.log', date('H:i:s') . " FINAL font=$font_size tw=$tw th=$th tx=$tx ty=$ty s=$s w=$w h=$h\n", FILE_APPEND );
