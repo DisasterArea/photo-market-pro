@@ -11,6 +11,9 @@ class PMP_Watermark {
     }
 
     public static function apply( $upload, $context = 'upload' ) {
+        $log = date('H:i:s') . " apply() context=$context mime=" . ($upload['type']??'-') . " imagick=" . (class_exists('Imagick')?'yes':'no') . "\n";
+        file_put_contents( PMP_DIR . 'wm-debug.log', $log, FILE_APPEND );
+
         if ( $context === 'sideload' ) return $upload;
 
         $mime = $upload['type'] ?? '';
