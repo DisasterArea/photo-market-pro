@@ -234,20 +234,19 @@ body input.pmp-filter-select:focus {
 
 /* ── Grid ─────────────────────────────────────────── */
 .pmp-masonry {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
+  columns: 6;
+  column-gap: 10px;
   transition: opacity .25s;
-  justify-content: center;
 }
-@media (max-width: 1400px) { .pmp-masonry { grid-template-columns: repeat(5, 1fr); } }
-@media (max-width: 1100px) { .pmp-masonry { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 800px)  { .pmp-masonry { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 560px)  { .pmp-masonry { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1400px) { .pmp-masonry { columns: 5; } }
+@media (max-width: 1100px) { .pmp-masonry { columns: 4; } }
+@media (max-width: 800px)  { .pmp-masonry { columns: 3; } }
+@media (max-width: 560px)  { .pmp-masonry { columns: 2; } }
 
 /* ── Card ─────────────────────────────────────────── */
 .pmp-card {
-  margin-bottom: 0;
+  break-inside: avoid;
+  margin-bottom: 10px;
   border-radius: var(--pmp-radius);
   overflow: hidden;
   position: relative;
