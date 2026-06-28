@@ -51,31 +51,36 @@ class PMP_Watermark {
             $ref_tw  = $metrics['textWidth'] ?? 0;
             $ref_th  = $metrics['textHeight'] ?? 0;
 
-            // Target: text diagonal fills from (margin,s-margin) to (s-margin,margin)
-            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 );
+            // Target: text fills 65% of the diagonal of the s×s square
+            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 ) * 0.65;
             $font_size = ( $ref_tw > 0 ) ? intval( 40 * $diag_len / $ref_tw ) : 60;
             $font_size = max( 14, $font_size );
 
-            // Safety loop: shrink until (tw + th)*0.707 fits within s-2*margin on each axis
-            $tx = $margin;
-            $ty = $s - $margin;
+            // Safety loop: shrink until text fits, then center on diagonal
+            $tw = 0; $th = 0;
             for ( $i = 0; $i < 15; $i++ ) {
                 $draw->setFontSize( $font_size );
                 $m      = $img->queryFontMetrics( $draw, self::TEXT );
                 $tw     = $m['textWidth']  ?? $font_size * 8;
                 $th     = $m['textHeight'] ?? $font_size * 1.3;
                 $extent = intval( ( $tw + $th ) * 0.707 );
-                $log    = date('H:i:s') . " imagick iter=$i font=$font_size tw=$tw th=$th extent=$extent need_x=" . ($tx+$extent) . "<=" . ($w-$margin) . " need_y=" . ($ty-$extent) . ">=$margin\n";
+                $log    = date('H:i:s') . " imagick iter=$i font=$font_size tw=$tw th=$th extent=$extent diag_avail=" . intval($s-2*$margin) . "\n";
                 file_put_contents( PMP_DIR . 'wm-debug.log', $log, FILE_APPEND );
-                if ( $tx + $extent <= ( $w - $margin ) && $ty - $extent >= $margin ) break;
+                if ( $extent <= ( $s - 2 * $margin ) ) break;
                 $font_size = intval( $font_size * 0.85 );
             }
+
+            // Center text on the diagonal: baseline origin = center of s×s minus half tw along 45°
+            $cx = $s / 2.0;
+            $cy = $s / 2.0;
+            $tx = intval( $cx - $tw / ( 2.0 * sqrt(2) ) );
+            $ty = intval( $cy + $tw / ( 2.0 * sqrt(2) ) );
+            file_put_contents( PMP_DIR . 'wm-debug.log', date('H:i:s') . " FINAL font=$font_size tw=$tw th=$th tx=$tx ty=$ty s=$s w=$w h=$h\n", FILE_APPEND );
 
             $draw->setFontSize( $font_size );
             $draw->setFillColor( new ImagickPixel( 'rgba(255,255,255,' . self::OPACITY . ')' ) );
 
-            // annotateImage(draw, x, y, angle, text): x,y = baseline origin, angle = CW degrees
-            // At -45 CW = 45 CCW: text goes lower-left to upper-right
+            // annotateImage: angle = CW degrees; -45 = 45°CCW = lower-left to upper-right
             $img->annotateImage( $draw, $tx, $ty, -45, self::TEXT );
 
             if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
