@@ -4,7 +4,15 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class PMP_Watermark {
 
     const TEXT    = '© ArcoScatto.it';
-    const OPACITY = 0.25;
+    const OPACITY = 0.30;
+    const ANGLE   = 45; // fixed 45°
+
+    /*
+     * Watermark center is always at (s, s) where s = min(w,h) * 0.38
+     * This places it on the 45° line from the top-left corner,
+     * proportionally at the same relative distance on every image.
+     * Font size is proportional to min(w,h).
+     */
 
     public static function init() {
         add_filter( 'wp_handle_upload', [ __CLASS__, 'apply' ], 10, 2 );
@@ -33,10 +41,11 @@ class PMP_Watermark {
             $img  = new Imagick( $file );
             $w    = $img->getImageWidth();
             $h    = $img->getImageHeight();
+            $s    = min( $w, $h );
 
-            $diag      = sqrt( $w * $w + $h * $h );
-            $diag_deg  = rad2deg( atan2( $h, $w ) ); // angle of image diagonal
-            $font_size = max( 24, intval( $diag * 0.038 ) );
+            $font_size = max( 20, intval( $s * 0.06 ) );
+            $cx        = intval( $s * 0.38 );
+            $cy        = intval( $s * 0.38 );
 
             $draw = new ImagickDraw();
             $draw->setFontSize( $font_size );
@@ -47,17 +56,14 @@ class PMP_Watermark {
                 try { $draw->setFont( $f ); break; } catch ( Exception $e ) { /* next */ }
             }
 
-            // Place at 1/3 along diagonal from top-left
-            $x = intval( $w * 0.10 );
-            $y = intval( $h * 0.38 );
-
-            $img->annotateImage( $draw, $x, $y, -$diag_deg, self::TEXT );
+            // Imagick annotate: angle is CW, -45 = bottom-left→top-right
+            $img->annotateImage( $draw, $cx, $cy, -self::ANGLE, self::TEXT );
 
             if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
             $img->writeImage( $file );
             $img->destroy();
         } catch ( Exception $e ) {
-            // silent
+            // silent – never break upload
         }
     }
 
@@ -75,39 +81,30 @@ class PMP_Watermark {
 
         $w = imagesx( $src );
         $h = imagesy( $src );
+        $s = min( $w, $h );
 
-        // Diagonal-based sizing and angle
-        $diag      = sqrt( $w * $w + $h * $h );
-        $diag_deg  = rad2deg( atan2( $h, $w ) ); // e.g. ~34° landscape, ~56° portrait
-        $font_size = max( 20, intval( $diag * 0.038 ) );
+        $font_size = max( 20, intval( $s * 0.06 ) );
 
-        // GD imagettftext: angle is CCW, positive = CCW, negative = CW
-        // We want text going bottom-left → top-right (matching the diagonal)
-        // That's +diag_deg CCW from horizontal
-        $gd_angle = $diag_deg;
+        // Center point on 45° line from top-left
+        $cx = intval( $s * 0.38 );
+        $cy = intval( $s * 0.38 );
 
-        // Measure text bounding box at this angle
-        $bbox = imagettfbbox( $font_size, $gd_angle, $font, self::TEXT );
+        // GD: angle is CCW, +45 = bottom-left→top-right (matching 45° diagonal)
+        $gd_angle = self::ANGLE;
 
-        // Center of the bbox
-        $cx_bbox = ( $bbox[0] + $bbox[4] ) / 2;
-        $cy_bbox = ( $bbox[1] + $bbox[5] ) / 2;
+        // Measure text bbox to find its center, then offset so center lands on (cx, cy)
+        $bbox  = imagettfbbox( $font_size, $gd_angle, $font, self::TEXT );
+        $bcx   = ( $bbox[0] + $bbox[4] ) / 2;
+        $bcy   = ( $bbox[1] + $bbox[5] ) / 2;
+        $tx    = intval( $cx - $bcx );
+        $ty    = intval( $cy - $bcy );
 
-        // We want text centered at 1/3 of the diagonal (upper-left third)
-        $target_x = intval( $w / 3 );
-        $target_y = intval( $h / 3 );
-
-        // imagettftext baseline origin: offset so bbox center lands on target
-        $tx = intval( $target_x - $cx_bbox );
-        $ty = intval( $target_y - $cy_bbox );
-
-        // 25% opacity → alpha 95 (GD: 0=opaque, 127=transparent)
+        // 30% opacity → alpha = 127 * 0.70 = 89
         $alpha  = intval( 127 * ( 1 - self::OPACITY ) );
         $white  = imagecolorallocatealpha( $src, 255, 255, 255, $alpha );
         $shadow = imagecolorallocatealpha( $src, 0, 0, 0, min( 127, $alpha + 25 ) );
 
         imagealphablending( $src, true );
-        // Shadow +1,+1
         imagettftext( $src, $font_size, $gd_angle, $tx + 2, $ty + 2, $shadow, $font, self::TEXT );
         imagettftext( $src, $font_size, $gd_angle, $tx,     $ty,     $white,  $font, self::TEXT );
 
