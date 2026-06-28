@@ -51,8 +51,8 @@ class PMP_Watermark {
             $ref_tw  = $metrics['textWidth'] ?? 0;
             $ref_th  = $metrics['textHeight'] ?? 0;
 
-            // Target: text fills the upper-left quarter diagonal (s/2 × s/2 area, 70%)
-            $diag_len  = ( $s / 2 ) * sqrt( 2 ) * 0.70;
+            // Target: text fills 65% of the diagonal of the s×s square
+            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 ) * 0.65;
             $font_size = ( $ref_tw > 0 ) ? intval( 40 * $diag_len / $ref_tw ) : 60;
             $font_size = max( 14, $font_size );
 
@@ -70,18 +70,18 @@ class PMP_Watermark {
                 $font_size = intval( $font_size * 0.85 );
             }
 
-            // Center of text at center of upper-left quarter (s/4, s/4)
-            $cx = $s * 0.25;
-            $cy = $s * 0.25;
+            // Center text on the diagonal: baseline origin = center of s×s minus half tw along 45°
+            $cx = $s / 2.0;
+            $cy = $s / 2.0;
             $tx = intval( $cx - $tw / ( 2.0 * sqrt(2) ) );
-            $ty = intval( $cy - $tw / ( 2.0 * sqrt(2) ) );
+            $ty = intval( $cy + $tw / ( 2.0 * sqrt(2) ) );
             file_put_contents( PMP_DIR . 'wm-debug.log', date('H:i:s') . " FINAL font=$font_size tw=$tw th=$th tx=$tx ty=$ty s=$s w=$w h=$h\n", FILE_APPEND );
 
             $draw->setFontSize( $font_size );
             $draw->setFillColor( new ImagickPixel( 'rgba(255,255,255,' . self::OPACITY . ')' ) );
 
-            // angle +45 CW = text goes upper-left to lower-right (\)
-            $img->annotateImage( $draw, $tx, $ty, 45, self::TEXT );
+            // annotateImage: angle = CW degrees; -45 = 45°CCW = lower-left to upper-right
+            $img->annotateImage( $draw, $tx, $ty, -45, self::TEXT );
 
             if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
             $img->writeImage( $file );
