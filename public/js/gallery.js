@@ -339,10 +339,17 @@ jQuery(function($){
                 }
                 $( '#pmp-load-more-wrap' ).remove();
                 if ( d.has_more ) {
+                    var remaining = d.total - d.shown;
                     $( '#pmp-masonry' ).after(
                         '<div id="pmp-load-more-wrap" style="text-align:center;margin:24px 0;">' +
-                        '<button class="pmp-btn-load-more" id="pmp-load-more-btn">Carica altri →</button>' +
+                        '<button class="pmp-btn-load-more" id="pmp-load-more-btn">Carica altri ' + remaining + ' →</button>' +
                         '</div>'
+                    );
+                }
+                $( '#pmp-result-count' ).remove();
+                if ( d.total !== undefined ) {
+                    $( '#pmp-active-filters' ).after(
+                        '<div id="pmp-result-count" style="text-align:right;font-size:0.85em;opacity:0.7;margin-bottom:8px;">= ' + d.total + ' foto</div>'
                     );
                 }
                 curPage++;

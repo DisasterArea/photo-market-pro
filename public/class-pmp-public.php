@@ -213,13 +213,16 @@ class PMP_Public {
         $offset    = max( 0, intval( $_POST['offset'] ?? 0 ) );
 
         $filters = compact( 'location', 'category', 'date_from', 'date_to' );
+        $total   = self::count_photos( $filters );
         $photos  = self::query_photos( $filters, $count, $offset );
 
         $html = '';
         foreach ( $photos as $p ) $html .= self::render_card( $p );
         if ( ! $html && $offset === 0 ) $html = '<p class="pmp-no-results">Nessun risultato per i filtri selezionati.</p>';
 
-        wp_send_json_success( [ 'html' => $html, 'count' => count( $photos ), 'has_more' => count( $photos ) === $count ] );
+        $shown    = $offset + count( $photos );
+        $has_more = $shown < $total;
+        wp_send_json_success( [ 'html' => $html, 'count' => count( $photos ), 'has_more' => $has_more, 'total' => $total, 'shown' => $shown ] );
     }
 
     /* ── AJAX: chained filter options ───────────────────────── */
@@ -258,13 +261,25 @@ class PMP_Public {
 
     /* ── Query helper ───────────────────────────────────────── */
 
-    private static function query_photos( $filters, $count, $offset = 0 ) {
+    private static function build_where( $filters ) {
         global $wpdb;
         $where = "WHERE 1=1";
         if ( ! empty( $filters['location'] ) )  $where .= $wpdb->prepare( " AND location = %s",   $filters['location'] );
         if ( ! empty( $filters['category'] ) )  $where .= $wpdb->prepare( " AND category = %s",   $filters['category'] );
         if ( ! empty( $filters['date_from'] ) ) $where .= $wpdb->prepare( " AND shot_date >= %s", $filters['date_from'] );
         if ( ! empty( $filters['date_to'] ) )   $where .= $wpdb->prepare( " AND shot_date <= %s", $filters['date_to'] );
+        return $where;
+    }
+
+    private static function count_photos( $filters ) {
+        global $wpdb;
+        $where = self::build_where( $filters );
+        return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}pmp_photos $where" );
+    }
+
+    private static function query_photos( $filters, $count, $offset = 0 ) {
+        global $wpdb;
+        $where = self::build_where( $filters );
         return $wpdb->get_results(
             $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}pmp_photos $where ORDER BY shot_date DESC, id DESC LIMIT %d OFFSET %d", $count, $offset ),
             ARRAY_A
