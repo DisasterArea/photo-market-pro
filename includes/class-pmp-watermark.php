@@ -5,14 +5,6 @@ class PMP_Watermark {
 
     const TEXT    = '© ArcoScatto.it';
     const OPACITY = 0.30;
-    const ANGLE   = 45; // fixed 45°
-
-    /*
-     * Watermark center is always at (s, s) where s = min(w,h) * 0.38
-     * This places it on the 45° line from the top-left corner,
-     * proportionally at the same relative distance on every image.
-     * Font size is proportional to min(w,h).
-     */
 
     public static function init() {
         add_filter( 'wp_handle_upload', [ __CLASS__, 'apply' ], 10, 2 );
@@ -38,14 +30,16 @@ class PMP_Watermark {
     /* ── Imagick path ─────────────────────────────────── */
     private static function apply_imagick( $file, $mime ) {
         try {
-            $img  = new Imagick( $file );
-            $w    = $img->getImageWidth();
-            $h    = $img->getImageHeight();
-            $s    = min( $w, $h );
+            $img = new Imagick( $file );
+            $w   = $img->getImageWidth();
+            $h   = $img->getImageHeight();
+            $s   = min( $w, $h );
 
             $font_size = max( 20, intval( $s * 0.06 ) );
-            $cx        = intval( $s * 0.38 );
-            $cy        = intval( $s * 0.38 );
+
+            // Center on 45° line: distance s/2 from corner → x=y= s/2/sqrt(2) = s*0.354
+            $cx = intval( $s * 0.354 );
+            $cy = intval( $s * 0.354 );
 
             $draw = new ImagickDraw();
             $draw->setFontSize( $font_size );
@@ -53,18 +47,15 @@ class PMP_Watermark {
             $draw->setTextAntialias( true );
 
             foreach ( [ 'Arial', 'DejaVu-Sans', 'Liberation-Sans', 'Helvetica' ] as $f ) {
-                try { $draw->setFont( $f ); break; } catch ( Exception $e ) { /* next */ }
+                try { $draw->setFont( $f ); break; } catch ( Exception $e ) { }
             }
 
-            // Imagick annotate: angle is CW, -45 = bottom-left→top-right
-            $img->annotateImage( $draw, $cx, $cy, -self::ANGLE, self::TEXT );
+            $img->annotateImage( $draw, $cx, $cy, -45, self::TEXT );
 
             if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
             $img->writeImage( $file );
             $img->destroy();
-        } catch ( Exception $e ) {
-            // silent – never break upload
-        }
+        } catch ( Exception $e ) { }
     }
 
     /* ── GD path ──────────────────────────────────────── */
@@ -85,34 +76,51 @@ class PMP_Watermark {
 
         $font_size = max( 20, intval( $s * 0.06 ) );
 
-        // Center point on 45° line from top-left
-        $cx = intval( $s * 0.38 );
-        $cy = intval( $s * 0.38 );
+        // Target center: on the 45° line, distance s/2 from corner → x = y = s * 0.354
+        $cx = intval( $s * 0.354 );
+        $cy = intval( $s * 0.354 );
 
-        // GD: angle is CCW, +45 = bottom-left→top-right
-        $gd_angle = self::ANGLE;
-        $rad      = deg2rad( $gd_angle );
+        // Step 1: measure text at 0° to get real pixel dimensions
+        $bbox = imagettfbbox( $font_size, 0, $font, self::TEXT );
+        $tw   = abs( $bbox[2] - $bbox[0] ); // width
+        $th   = abs( $bbox[7] - $bbox[1] ); // height
+        $pad  = intval( $th * 0.6 );
 
-        // Measure at 0° to get true text dimensions
-        $bbox0 = imagettfbbox( $font_size, 0, $font, self::TEXT );
-        $tw    = abs( $bbox0[4] - $bbox0[0] ); // text width
-        $th    = abs( $bbox0[5] - $bbox0[1] ); // text height
+        // Step 2: draw text on its own canvas (horizontal, centered)
+        $lw    = $tw + $pad * 2;
+        $lh    = $th + $pad * 2;
+        $layer = imagecreatetruecolor( $lw, $lh );
+        imagealphablending( $layer, false );
+        imagesavealpha( $layer, true );
+        $trans = imagecolorallocatealpha( $layer, 0, 0, 0, 127 );
+        imagefill( $layer, 0, 0, $trans );
+        imagealphablending( $layer, true );
 
-        // Baseline origin so that text CENTER lands on (cx, cy)
-        // For rotated text: center_x = tx + (tw/2)*cos(rad) - (th/2)*sin(rad)
-        //                   center_y = ty - (tw/2)*sin(rad) - (th/2)*cos(rad)  [GD Y-down]
-        // Solving for tx, ty:
-        $tx = intval( $cx - ( $tw / 2 ) * cos( $rad ) + ( $th / 2 ) * sin( $rad ) );
-        $ty = intval( $cy + ( $tw / 2 ) * sin( $rad ) + ( $th / 2 ) * cos( $rad ) );
-
-        // 30% opacity → alpha = 127 * 0.70 = 89
         $alpha  = intval( 127 * ( 1 - self::OPACITY ) );
-        $white  = imagecolorallocatealpha( $src, 255, 255, 255, $alpha );
-        $shadow = imagecolorallocatealpha( $src, 0, 0, 0, min( 127, $alpha + 25 ) );
+        $white  = imagecolorallocatealpha( $layer, 255, 255, 255, $alpha );
+        $shadow = imagecolorallocatealpha( $layer, 0,   0,   0,   min( 127, $alpha + 25 ) );
+
+        // baseline y: pad from bottom of layer
+        $bx = $pad;
+        $by = $lh - $pad;
+        imagettftext( $layer, $font_size, 0, $bx + 2, $by + 1, $shadow, $font, self::TEXT );
+        imagettftext( $layer, $font_size, 0, $bx,     $by,     $white,  $font, self::TEXT );
+
+        // Step 3: rotate 45° CCW (GD convention: positive = CCW)
+        $rotated = imagerotate( $layer, 45, $trans, 1 );
+        imagesavealpha( $rotated, true );
+        imagedestroy( $layer );
+
+        $rw = imagesx( $rotated );
+        $rh = imagesy( $rotated );
+
+        // Step 4: place so CENTER of rotated layer = (cx, cy)
+        $dx = $cx - intval( $rw / 2 );
+        $dy = $cy - intval( $rh / 2 );
 
         imagealphablending( $src, true );
-        imagettftext( $src, $font_size, $gd_angle, $tx + 2, $ty + 2, $shadow, $font, self::TEXT );
-        imagettftext( $src, $font_size, $gd_angle, $tx,     $ty,     $white,  $font, self::TEXT );
+        imagecopy( $src, $rotated, $dx, $dy, 0, 0, $rw, $rh );
+        imagedestroy( $rotated );
 
         if ( $mime === 'image/jpeg' ) {
             imagejpeg( $src, $file, 92 );
