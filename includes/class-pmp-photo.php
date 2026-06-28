@@ -56,6 +56,7 @@ class PMP_Photo {
                         lb.addEventListener('click', function(ev) { if(ev.target===lb) closeLb(); });
                         document.getElementById('pmp-lb-close').addEventListener('click', closeLb);
                         document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') closeLb(); });
+                        lb.addEventListener('touchmove', function(ev){ ev.preventDefault(); }, { passive: false });
                     }
                     document.getElementById('pmp-lb-img').src = src;
                     document.getElementById('pmp-lb-prev') && (document.getElementById('pmp-lb-prev').style.display='none');

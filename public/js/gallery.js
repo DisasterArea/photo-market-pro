@@ -110,14 +110,22 @@ jQuery(function($){
         if ( e.key === 'ArrowRight' ) showLbPhoto( lbIndex + 1 );
     });
 
-    /* ── Swipe support ──────────────────────────────── */
+    /* ── Swipe support + block background scroll ────── */
     var swipeX = 0;
+    var swipeY = 0;
     $( document ).on( 'touchstart', '#pmp-lightbox', function(e) {
         swipeX = e.originalEvent.touches[0].clientX;
+        swipeY = e.originalEvent.touches[0].clientY;
     });
+    $( document ).on( 'touchmove', '#pmp-lightbox', function(e) {
+        e.preventDefault();
+    }, { passive: false } );
     $( document ).on( 'touchend', '#pmp-lightbox', function(e) {
         var dx = e.originalEvent.changedTouches[0].clientX - swipeX;
-        if ( Math.abs(dx) > 50 ) { dx < 0 ? showLbPhoto( lbIndex + 1 ) : showLbPhoto( lbIndex - 1 ); }
+        var dy = e.originalEvent.changedTouches[0].clientY - swipeY;
+        if ( Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50 ) {
+            dx < 0 ? showLbPhoto( lbIndex + 1 ) : showLbPhoto( lbIndex - 1 );
+        }
     });
 
     /* ── Lightbox tag click → filter + close ────────── */
