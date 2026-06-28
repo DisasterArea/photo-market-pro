@@ -70,18 +70,18 @@ class PMP_Watermark {
                 $font_size = intval( $font_size * 0.85 );
             }
 
-            // Center text in upper-left third of the s×s square
+            // Center of text at 30% of s×s (upper-left area), \ diagonal direction (+45° CW)
             $cx = $s * 0.30;
             $cy = $s * 0.30;
             $tx = intval( $cx - $tw / ( 2.0 * sqrt(2) ) );
-            $ty = intval( $cy + $tw / ( 2.0 * sqrt(2) ) );
+            $ty = intval( $cy - $tw / ( 2.0 * sqrt(2) ) );
             file_put_contents( PMP_DIR . 'wm-debug.log', date('H:i:s') . " FINAL font=$font_size tw=$tw th=$th tx=$tx ty=$ty s=$s w=$w h=$h\n", FILE_APPEND );
 
             $draw->setFontSize( $font_size );
             $draw->setFillColor( new ImagickPixel( 'rgba(255,255,255,' . self::OPACITY . ')' ) );
 
-            // annotateImage: angle = CW degrees; -45 = 45°CCW = lower-left to upper-right
-            $img->annotateImage( $draw, $tx, $ty, -45, self::TEXT );
+            // angle +45 CW = text goes upper-left to lower-right (\)
+            $img->annotateImage( $draw, $tx, $ty, 45, self::TEXT );
 
             if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
             $img->writeImage( $file );
