@@ -13,13 +13,20 @@ jQuery(function($){
     function initMasonry() {
         var $grid = $( '#pmp-masonry' );
         if ( ! $grid.length ) return;
-        $grid.prepend( '<div class="pmp-masonry-sizer"></div>' );
+        if ( ! $grid.find( '.pmp-masonry-sizer' ).length ) {
+            $grid.prepend( '<div class="pmp-masonry-sizer"></div>' );
+        }
+        $grid.css( 'opacity', 0 );
         $grid.imagesLoaded( function() {
             msnry = new Masonry( $grid[0], {
                 itemSelector:  '.pmp-card',
                 columnWidth:   '.pmp-masonry-sizer',
                 gutter:        10,
                 percentPosition: true,
+            });
+            requestAnimationFrame( function() {
+                msnry.layout();
+                $grid.css( 'opacity', 1 );
             });
         });
     }
