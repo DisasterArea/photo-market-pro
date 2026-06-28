@@ -98,11 +98,13 @@ class PMP_Watermark {
             $tw     = abs( $b_act[2] - $b_act[0] );
             $th     = abs( $b_act[7] - $b_act[1] );
             $extent = intval( ( $tw + $th ) * 0.707 );
-            error_log( "[PMP_WM] iter=$i font=$font_size tw=$tw th=$th extent=$extent limit_x=" . ($w-$margin) . " limit_y=$margin tx=$tx ty=$ty" );
+            $log = date('H:i:s') . " iter=$i font=$font_size tw=$tw th=$th extent=$extent need_x=" . ($tx+$extent) . "<=" . ($w-$margin) . " need_y=" . ($ty-$extent) . ">=$margin\n";
+            file_put_contents( PMP_DIR . 'wm-debug.log', $log, FILE_APPEND );
             if ( $tx + $extent <= ( $w - $margin ) && $ty - $extent >= $margin ) break;
             $font_size = intval( $font_size * 0.85 );
         }
-        error_log( "[PMP_WM] FINAL font=$font_size image={$w}x{$h} s=$s margin=$margin tx=$tx ty=$ty" );
+        $log = date('H:i:s') . " FINAL font=$font_size image={$w}x{$h} s=$s margin=$margin tx=$tx ty=$ty\n";
+        file_put_contents( PMP_DIR . 'wm-debug.log', $log, FILE_APPEND );
 
         $alpha  = intval( 127 * ( 1 - self::OPACITY ) );
         $white  = imagecolorallocatealpha( $src, 255, 255, 255, $alpha );
