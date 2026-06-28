@@ -51,8 +51,8 @@ class PMP_Watermark {
             $ref_tw  = $metrics['textWidth'] ?? 0;
             $ref_th  = $metrics['textHeight'] ?? 0;
 
-            // Target: text fills 65% of the diagonal of the s×s square
-            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 ) * 0.65;
+            // Target: text fills 45% of the diagonal of the s×s square
+            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 ) * 0.45;
             $font_size = ( $ref_tw > 0 ) ? intval( 40 * $diag_len / $ref_tw ) : 60;
             $font_size = max( 14, $font_size );
 
