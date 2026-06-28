@@ -12,16 +12,23 @@ class PMP_Watermark {
     }
 
     public static function apply( $upload, $context = 'upload' ) {
-        if ( $context === 'sideload' ) return $upload;
+        error_log( '[PMP_Watermark] apply() called. context=' . $context . ' type=' . ( $upload['type'] ?? '-' ) . ' file=' . ( $upload['file'] ?? '-' ) );
+
+        if ( $context === 'sideload' ) { error_log( '[PMP_Watermark] skipped: sideload' ); return $upload; }
 
         $mime = $upload['type'] ?? '';
-        if ( ! in_array( $mime, [ 'image/jpeg', 'image/png' ], true ) ) return $upload;
+        if ( ! in_array( $mime, [ 'image/jpeg', 'image/png' ], true ) ) {
+            error_log( '[PMP_Watermark] skipped: mime not jpeg/png' );
+            return $upload;
+        }
 
         $file = $upload['file'];
 
         if ( class_exists( 'Imagick' ) ) {
+            error_log( '[PMP_Watermark] using Imagick' );
             self::apply_imagick( $file, $mime );
         } else {
+            error_log( '[PMP_Watermark] using GD' );
             self::apply_gd( $file, $mime );
         }
 
@@ -61,14 +68,16 @@ class PMP_Watermark {
     /* ── GD path ──────────────────────────────────────── */
     private static function apply_gd( $file, $mime ) {
         $font = self::find_font();
-        if ( ! $font || ! file_exists( $font ) ) return;
+        error_log( '[PMP_Watermark] GD font=' . $font );
+        if ( ! $font || ! file_exists( $font ) ) { error_log( '[PMP_Watermark] GD font not found!' ); return; }
 
         if ( $mime === 'image/jpeg' ) {
             $src = @imagecreatefromjpeg( $file );
         } else {
             $src = @imagecreatefrompng( $file );
         }
-        if ( ! $src ) return;
+        if ( ! $src ) { error_log( '[PMP_Watermark] GD imagecreatefrom failed' ); return; }
+        error_log( '[PMP_Watermark] GD image loaded, size=' . imagesx($src) . 'x' . imagesy($src) );
 
         $w         = imagesx( $src );
         $h         = imagesy( $src );
