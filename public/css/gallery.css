@@ -234,25 +234,19 @@ body input.pmp-filter-select:focus {
 
 /* ── Grid ─────────────────────────────────────────── */
 .pmp-masonry {
-  -webkit-columns: 6;
-  columns: 6;
-  -webkit-column-gap: 10px;
-  column-gap: 10px;
   transition: opacity .25s;
 }
-@media (max-width: 1400px) { .pmp-masonry { -webkit-columns: 5; columns: 5; } }
-@media (max-width: 1100px) { .pmp-masonry { -webkit-columns: 4; columns: 4; } }
-@media (max-width: 800px)  { .pmp-masonry { -webkit-columns: 3; columns: 3; } }
-@media (max-width: 560px)  { .pmp-masonry { -webkit-columns: 2; columns: 2; } }
+.pmp-masonry-sizer,
+.pmp-card { width: calc(16.666% - 9px); }
+@media (max-width: 1400px) { .pmp-masonry-sizer, .pmp-card { width: calc(20% - 8px); } }
+@media (max-width: 1100px) { .pmp-masonry-sizer, .pmp-card { width: calc(25% - 8px); } }
+@media (max-width: 800px)  { .pmp-masonry-sizer, .pmp-card { width: calc(33.333% - 7px); } }
+@media (max-width: 560px)  { .pmp-masonry-sizer, .pmp-card { width: calc(50% - 5px); } }
 
 /* ── Card ─────────────────────────────────────────── */
 .pmp-card {
-  -webkit-column-break-inside: avoid;
-  break-inside: avoid;
   margin-bottom: 10px;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  will-change: transform;
+  float: left;
   border-radius: var(--pmp-radius);
   overflow: hidden;
   position: relative;

@@ -8,6 +8,31 @@ jQuery(function($){
     var count    = parseInt( $wrap.data('count') ) || 18;
     var pageSize = count;
     var curPage  = parseInt( $wrap.data('page') ) || 0;
+    var msnry    = null;
+
+    function initMasonry() {
+        var $grid = $( '#pmp-masonry' );
+        if ( ! $grid.length ) return;
+        $grid.prepend( '<div class="pmp-masonry-sizer"></div>' );
+        $grid.imagesLoaded( function() {
+            msnry = new Masonry( $grid[0], {
+                itemSelector:  '.pmp-card',
+                columnWidth:   '.pmp-masonry-sizer',
+                gutter:        10,
+                percentPosition: true,
+            });
+        });
+    }
+
+    function relayout() {
+        if ( ! msnry ) return;
+        $( '#pmp-masonry' ).imagesLoaded( function() {
+            msnry.reloadItems();
+            msnry.layout();
+        });
+    }
+
+    initMasonry();
     var curFilters = {};
 
     /* ── Boot: load dropdowns ──────────────────────── */
@@ -333,9 +358,17 @@ jQuery(function($){
                 }
                 var d = res.data;
                 if ( append ) {
-                    $( '#pmp-masonry' ).append( d.html );
+                    var $new = $( d.html );
+                    $( '#pmp-masonry' ).append( $new );
+                    if ( msnry ) {
+                        $( '#pmp-masonry' ).imagesLoaded( function() {
+                            msnry.appended( $new );
+                        });
+                    }
                 } else {
+                    if ( msnry ) { msnry.destroy(); msnry = null; }
                     $( '#pmp-masonry' ).html( d.html );
+                    initMasonry();
                 }
                 $( '#pmp-load-more-wrap' ).remove();
                 if ( d.has_more ) {

@@ -19,7 +19,9 @@ class PMP_Public {
     public static function enqueue_scripts() {
         wp_enqueue_style(  'pmp-public', PMP_URL . 'public/css/gallery.css', [], PMP_VERSION );
         wp_add_inline_style( 'pmp-public', self::override_css() );
-        wp_enqueue_script( 'pmp-public', PMP_URL . 'public/js/gallery.js', [ 'jquery' ], PMP_VERSION, true );
+        wp_enqueue_script( 'masonry', 'https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js', [], '4.2.2', true );
+        wp_enqueue_script( 'imagesloaded', 'https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js', [], '4.1.4', true );
+        wp_enqueue_script( 'pmp-public', PMP_URL . 'public/js/gallery.js', [ 'jquery', 'masonry', 'imagesloaded' ], PMP_VERSION, true );
         wp_localize_script( 'pmp-public', 'PMP_Public', [
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'nonce'   => wp_create_nonce( 'pmp_public_nonce' ),
@@ -130,6 +132,7 @@ class PMP_Public {
           </div>
 
           <div class="pmp-masonry" id="pmp-masonry">
+            <div class="pmp-masonry-sizer"></div>
             <?php foreach ( $photos as $p ) echo self::render_card( $p ); ?>
             <?php if ( empty( $photos ) ) echo '<p class="pmp-no-results">Nessuna foto disponibile.</p>'; ?>
           </div>
