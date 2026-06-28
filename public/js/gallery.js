@@ -32,6 +32,9 @@ jQuery(function($){
               '<button id="pmp-lb-next" aria-label="Successivo">&#8250;</button>' +
             '</div>'
         );
+        document.getElementById('pmp-lightbox').addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
     }
 
     var lbList  = [];
@@ -110,16 +113,13 @@ jQuery(function($){
         if ( e.key === 'ArrowRight' ) showLbPhoto( lbIndex + 1 );
     });
 
-    /* ── Swipe support + block background scroll ────── */
+    /* ── Swipe support ──────────────────────────────── */
     var swipeX = 0;
     var swipeY = 0;
     $( document ).on( 'touchstart', '#pmp-lightbox', function(e) {
         swipeX = e.originalEvent.touches[0].clientX;
         swipeY = e.originalEvent.touches[0].clientY;
     });
-    $( document ).on( 'touchmove', '#pmp-lightbox', function(e) {
-        e.preventDefault();
-    }, { passive: false } );
     $( document ).on( 'touchend', '#pmp-lightbox', function(e) {
         var dx = e.originalEvent.changedTouches[0].clientX - swipeX;
         var dy = e.originalEvent.changedTouches[0].clientY - swipeY;
