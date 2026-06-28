@@ -33,7 +33,7 @@ class PMP_Watermark {
         try {
             $img  = new Imagick( $file );
             $w    = $img->getImageWidth();
-            $size = max( 28, intval( $w * 0.042 ) );
+            $size = max( 32, intval( $w * 0.058 ) );
 
             $draw = new ImagickDraw();
             $draw->setFontSize( $size );
@@ -45,8 +45,8 @@ class PMP_Watermark {
             }
 
             $h = $img->getImageHeight();
-            $x = intval( $w * 0.10 );
-            $y = intval( $h * 0.34 );
+            $x = intval( $w * 0.03 );
+            $y = intval( $h * 0.44 );
 
             $img->annotateImage( $draw, $x, $y, -self::ANGLE, self::TEXT );
 
@@ -72,7 +72,7 @@ class PMP_Watermark {
 
         $w         = imagesx( $src );
         $h         = imagesy( $src );
-        $font_size = max( 20, intval( $w * 0.042 ) );
+        $font_size = max( 24, intval( $w * 0.058 ) );
 
         // Measure text
         $bbox = imagettfbbox( $font_size, 0, $font, self::TEXT );
@@ -103,8 +103,8 @@ class PMP_Watermark {
         $rh = imagesy( $rotated );
 
         // Composite onto photo
-        $dx = intval( $w * 0.06 );
-        $dy = intval( $h * 0.18 );
+        $dx = intval( $w * 0.02 );
+        $dy = intval( $h * 0.28 );
         imagealphablending( $src, true );
         imagecopy( $src, $rotated, $dx, $dy, 0, 0, $rw, $rh );
 
