@@ -28,14 +28,16 @@ class PMP_Photo {
         echo '<div class="pmp-edit-options">';
         echo '<h4 class="pmp-edit-title">Opzioni di editing (opzionale)</h4>';
         foreach ( $edit_options as $opt ) {
-            echo '<label class="pmp-edit-label">';
-            echo '<input type="checkbox" name="pmp_edit_option[]" value="' . esc_attr( $opt['id'] ) . '" class="pmp-edit-option-cb" data-price="' . esc_attr( $opt['price'] ) . '"> ';
-            echo '<strong>' . esc_html( $opt['name'] ) . '</strong>';
-            if ( $opt['description'] ) echo ' <span class="pmp-edit-desc">– ' . esc_html( $opt['description'] ) . '</span>';
-            echo ' <span class="pmp-edit-price">+' . number_format( $opt['price'], 2, ',', '.' ) . ' €</span>';
+            echo '<label class="pmp-edit-card">';
+            echo '<input type="checkbox" name="pmp_edit_option[]" value="' . esc_attr( $opt['id'] ) . '" class="pmp-edit-option-cb" data-price="' . esc_attr( $opt['price'] ) . '">';
+            echo '<div class="pmp-edit-card-body">';
+            echo '<span class="pmp-edit-card-name">' . esc_html( $opt['name'] ) . '</span>';
+            if ( $opt['description'] ) echo '<span class="pmp-edit-card-desc">' . esc_html( $opt['description'] ) . '</span>';
+            echo '</div>';
+            echo '<span class="pmp-edit-price">+' . number_format( $opt['price'], 2, ',', '.' ) . ' €</span>';
             echo '</label>';
         }
-        echo '<div class="pmp-edit-note-wrap">';
+        echo '<div class="pmp-edit-note-wrap" id="pmp-edit-note-wrap" style="display:none;">';
         echo '<label class="pmp-edit-note-label">Note / richiesta:</label>';
         echo '<textarea name="pmp_edit_request" rows="3" class="pmp-edit-textarea" placeholder="Descrivi nel dettaglio cosa desideri..."></textarea>';
         echo '</div>';
@@ -48,11 +50,14 @@ class PMP_Photo {
             function fmt(n){ return n.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}); }
             function update(){
                 var extra = 0;
-                document.querySelectorAll('.pmp-edit-option-cb:checked').forEach(function(cb){ extra += parseFloat(cb.dataset.price)||0; });
+                var checked = document.querySelectorAll('.pmp-edit-option-cb:checked');
+                checked.forEach(function(cb){ extra += parseFloat(cb.dataset.price)||0; });
                 var el = document.getElementById('pmp-price-preview');
                 el.innerHTML = extra > 0
                     ? 'Opzioni: <strong>+' + fmt(extra) + ' €</strong> &nbsp;→&nbsp; Totale: <strong>' + fmt(base+extra) + ' €</strong>'
                     : '';
+                var noteWrap = document.getElementById('pmp-edit-note-wrap');
+                if ( noteWrap ) noteWrap.style.display = checked.length > 0 ? 'block' : 'none';
             }
             document.querySelectorAll('.pmp-edit-option-cb').forEach(function(cb){ cb.addEventListener('change', update); });
         })();
