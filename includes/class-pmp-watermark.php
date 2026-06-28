@@ -6,20 +6,25 @@ class PMP_Watermark {
     const TEXT    = '© ArcoScatto.it';
     const OPACITY = 0.30;
 
+    // Track processed attachment IDs to avoid double-processing
+    private static $processed = [];
+
     public static function init() {
-        add_filter( 'wp_handle_upload', [ __CLASS__, 'apply' ], 10, 2 );
+        add_filter( 'wp_generate_attachment_metadata', [ __CLASS__, 'apply_on_metadata' ], 10, 2 );
     }
 
-    public static function apply( $upload, $context = 'upload' ) {
-        $log = date('H:i:s') . " apply() context=$context mime=" . ($upload['type']??'-') . " imagick=" . (class_exists('Imagick')?'yes':'no') . "\n";
+    public static function apply_on_metadata( $metadata, $attachment_id ) {
+        if ( isset( self::$processed[ $attachment_id ] ) ) return $metadata;
+        self::$processed[ $attachment_id ] = true;
+
+        $mime = get_post_mime_type( $attachment_id );
+        $log  = date('H:i:s') . " apply() attachment_id=$attachment_id mime=$mime imagick=" . (class_exists('Imagick')?'yes':'no') . "\n";
         file_put_contents( PMP_DIR . 'wm-debug.log', $log, FILE_APPEND );
 
-        if ( $context === 'sideload' ) return $upload;
+        if ( ! in_array( $mime, [ 'image/jpeg', 'image/png' ], true ) ) return $metadata;
 
-        $mime = $upload['type'] ?? '';
-        if ( ! in_array( $mime, [ 'image/jpeg', 'image/png' ], true ) ) return $upload;
-
-        $file = $upload['file'];
+        $file = get_attached_file( $attachment_id );
+        if ( ! $file || ! file_exists( $file ) ) return $metadata;
 
         if ( class_exists( 'Imagick' ) ) {
             self::apply_imagick( $file, $mime );
@@ -27,7 +32,7 @@ class PMP_Watermark {
             self::apply_gd( $file, $mime );
         }
 
-        return $upload;
+        return $metadata;
     }
 
     private static function apply_imagick( $file, $mime ) {
