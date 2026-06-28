@@ -93,15 +93,16 @@ class PMP_Watermark {
         $ty = $s - $margin;
 
         // Safety loop: shrink font until the full rotated bounding box fits within image
-        // At 45°, both text width AND height contribute: extent = (tw + th) * cos(45°)
         for ( $i = 0; $i < 15; $i++ ) {
             $b_act  = imagettfbbox( $font_size, 0, $font, self::TEXT );
             $tw     = abs( $b_act[2] - $b_act[0] );
             $th     = abs( $b_act[7] - $b_act[1] );
             $extent = intval( ( $tw + $th ) * 0.707 );
+            error_log( "[PMP_WM] iter=$i font=$font_size tw=$tw th=$th extent=$extent limit_x=" . ($w-$margin) . " limit_y=$margin tx=$tx ty=$ty" );
             if ( $tx + $extent <= ( $w - $margin ) && $ty - $extent >= $margin ) break;
             $font_size = intval( $font_size * 0.85 );
         }
+        error_log( "[PMP_WM] FINAL font=$font_size image={$w}x{$h} s=$s margin=$margin tx=$tx ty=$ty" );
 
         $alpha  = intval( 127 * ( 1 - self::OPACITY ) );
         $white  = imagecolorallocatealpha( $src, 255, 255, 255, $alpha );
