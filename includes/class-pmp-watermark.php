@@ -89,15 +89,21 @@ class PMP_Watermark {
         $cx = intval( $s * 0.38 );
         $cy = intval( $s * 0.38 );
 
-        // GD: angle is CCW, +45 = bottom-left→top-right (matching 45° diagonal)
+        // GD: angle is CCW, +45 = bottom-left→top-right
         $gd_angle = self::ANGLE;
+        $rad      = deg2rad( $gd_angle );
 
-        // Measure text bbox to find its center, then offset so center lands on (cx, cy)
-        $bbox  = imagettfbbox( $font_size, $gd_angle, $font, self::TEXT );
-        $bcx   = ( $bbox[0] + $bbox[4] ) / 2;
-        $bcy   = ( $bbox[1] + $bbox[5] ) / 2;
-        $tx    = intval( $cx - $bcx );
-        $ty    = intval( $cy - $bcy );
+        // Measure at 0° to get true text dimensions
+        $bbox0 = imagettfbbox( $font_size, 0, $font, self::TEXT );
+        $tw    = abs( $bbox0[4] - $bbox0[0] ); // text width
+        $th    = abs( $bbox0[5] - $bbox0[1] ); // text height
+
+        // Baseline origin so that text CENTER lands on (cx, cy)
+        // For rotated text: center_x = tx + (tw/2)*cos(rad) - (th/2)*sin(rad)
+        //                   center_y = ty - (tw/2)*sin(rad) - (th/2)*cos(rad)  [GD Y-down]
+        // Solving for tx, ty:
+        $tx = intval( $cx - ( $tw / 2 ) * cos( $rad ) + ( $th / 2 ) * sin( $rad ) );
+        $ty = intval( $cy + ( $tw / 2 ) * sin( $rad ) + ( $th / 2 ) * cos( $rad ) );
 
         // 30% opacity → alpha = 127 * 0.70 = 89
         $alpha  = intval( 127 * ( 1 - self::OPACITY ) );
