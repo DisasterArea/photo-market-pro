@@ -138,8 +138,18 @@ class PMP_Watermark {
         $dx = $cx - intval( $rw / 2 );
         $dy = $cy - intval( $rh / 2 );
 
+        // Clamp to image boundaries
+        $dst_x  = max( 0, $dx );
+        $dst_y  = max( 0, $dy );
+        $src_x  = max( 0, -$dx );
+        $src_y  = max( 0, -$dy );
+        $copy_w = min( $rw - $src_x, $w - $dst_x );
+        $copy_h = min( $rh - $src_y, $h - $dst_y );
+
         imagealphablending( $src, true );
-        imagecopy( $src, $rotated, $dx, $dy, 0, 0, $rw, $rh );
+        if ( $copy_w > 0 && $copy_h > 0 ) {
+            imagecopy( $src, $rotated, $dst_x, $dst_y, $src_x, $src_y, $copy_w, $copy_h );
+        }
         imagedestroy( $rotated );
 
         if ( $mime === 'image/jpeg' ) {
