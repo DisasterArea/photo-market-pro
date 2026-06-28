@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class PMP_Watermark {
 
     const TEXT    = '© ArcoScatto.it';
-    const OPACITY = 0.20;
+    const OPACITY = 0.25;
     const ANGLE   = 35; // GD rotates CCW, +35 = bottom-left→top-right diagonal
 
     public static function init() {
@@ -40,7 +40,7 @@ class PMP_Watermark {
         try {
             $img  = new Imagick( $file );
             $w    = $img->getImageWidth();
-            $size = max( 32, intval( $w * 0.058 ) );
+            $size = max( 36, intval( $w * 0.068 ) );
 
             $draw = new ImagickDraw();
             $draw->setFontSize( $size );
@@ -52,8 +52,8 @@ class PMP_Watermark {
             }
 
             $h = $img->getImageHeight();
-            $x = intval( $w * 0.03 );
-            $y = intval( $h * 0.44 );
+            $x = intval( $w * 0.05 );
+            $y = intval( $h * 0.38 );
 
             $img->annotateImage( $draw, $x, $y, -self::ANGLE, self::TEXT );
 
@@ -81,7 +81,7 @@ class PMP_Watermark {
 
         $w         = imagesx( $src );
         $h         = imagesy( $src );
-        $font_size = max( 24, intval( $w * 0.058 ) );
+        $font_size = max( 28, intval( $w * 0.068 ) );
 
         // Measure text
         $bbox = imagettfbbox( $font_size, 0, $font, self::TEXT );
@@ -97,7 +97,7 @@ class PMP_Watermark {
         imagealphablending( $layer, true );
 
         // 20% opacity = alpha 102 (GD: 0=opaque, 127=transparent)
-        $white  = imagecolorallocatealpha( $layer, 255, 255, 255, 102 );
+        $white  = imagecolorallocatealpha( $layer, 255, 255, 255, 95 );
         $shadow = imagecolorallocatealpha( $layer, 0, 0, 0, 120 );
 
         // Draw with 1px shadow for legibility
@@ -112,8 +112,8 @@ class PMP_Watermark {
         $rh = imagesy( $rotated );
 
         // Composite onto photo
-        $dx = intval( $w * 0.02 );
-        $dy = intval( $h * 0.28 );
+        $dx = intval( $w * 0.04 );
+        $dy = intval( $h * 0.20 );
         imagealphablending( $src, true );
         imagecopy( $src, $rotated, $dx, $dy, 0, 0, $rw, $rh );
 
