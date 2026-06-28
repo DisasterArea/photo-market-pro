@@ -348,8 +348,8 @@ jQuery(function($){
                 }
                 $( '#pmp-result-count' ).remove();
                 if ( d.total !== undefined ) {
-                    $( '#pmp-active-filters' ).after(
-                        '<div id="pmp-result-count" style="text-align:right;font-size:0.85em;opacity:0.7;margin-bottom:8px;">= ' + d.total + ' foto</div>'
+                    $( '#pmp-active-filters' ).append(
+                        '<span id="pmp-result-count" style="font-size:0.85em;opacity:0.7;margin-left:8px;">= ' + d.total + ' foto</span>'
                     );
                 }
                 curPage++;
