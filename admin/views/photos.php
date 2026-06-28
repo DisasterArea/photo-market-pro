@@ -31,6 +31,9 @@
             <button type="button" class="button button-primary" id="pmp-bulk-upload-btn">
                 <span class="dashicons dashicons-upload" style="vertical-align:middle; margin-top:-3px;"></span> Tömeges feltöltés
             </button>
+            <button type="button" class="button" id="pmp-rename-btn">
+                <span class="dashicons dashicons-edit" style="vertical-align:middle; margin-top:-3px;"></span> Átnevezés
+            </button>
         </div>
         <div style="clear:both;"></div>
     </div>
@@ -194,11 +197,12 @@
     </div>
     <div class="pmp-modal-body">
       <div class="pmp-info-box" style="margin-bottom:16px;">
-        <strong>Fájlnév formátum:</strong> <code>helyszin_kategoria_YYYYMMDD.jpg</code><br>
-        Példa: <code>budapest_auto_20240315.jpg</code> → Budapest / Auto / 2024.03.15
+        <strong>Mappa formátum:</strong> <code>Helyszin_Kategoria_DDMMYYYY</code><br>
+        Példa: <code>CastelDelMonte_Bicicletta_15032024</code> → Castel Del Monte / Bicicletta / 2024.03.15
       </div>
-      <label>Képek kiválasztása (több fájl egyszerre)</label>
-      <input type="file" id="pmp-bulk-files" multiple accept="image/*" style="display:block;margin:8px 0 16px;">
+      <div id="pmp-folder-info" style="display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:4px;padding:10px;margin-bottom:12px;font-size:13px;"></div>
+      <label>Mappa kiválasztása</label>
+      <input type="file" id="pmp-bulk-files" webkitdirectory mozdirectory accept="image/*" style="display:block;margin:8px 0 16px;">
       <div id="pmp-bulk-preview" class="pmp-bulk-preview-list"></div>
       <div class="pmp-form-row" style="margin-top:16px;">
         <div class="pmp-form-col">
@@ -227,6 +231,36 @@
         <div class="pmp-progress-bar"><div class="pmp-progress-fill" style="width:0%"></div></div>
         <p id="pmp-bulk-status" style="margin:8px 0 0;font-size:13px;"></p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BULK RENAME MODAL ═══ -->
+<div id="pmp-rename-modal" class="pmp-modal" style="display:none;">
+  <div class="pmp-modal-box" style="max-width:620px;">
+    <div class="pmp-modal-header">
+      <h2>Helyszín / Kategória átnevezés</h2>
+      <button class="pmp-modal-close" type="button">✕</button>
+    </div>
+    <div class="pmp-modal-body">
+      <p style="color:#555;margin-top:0;">Javítsd az elírt helyszín- vagy kategórianeveket. Az összes érintett fotó és WooCommerce termék neve frissül.</p>
+      <table style="width:100%;border-collapse:collapse;" id="pmp-rename-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;width:38%;">Jelenlegi érték</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;width:14%;color:#888;">Típus</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Új értékre</th>
+          </tr>
+        </thead>
+        <tbody id="pmp-rename-rows">
+          <tr><td colspan="3" style="text-align:center;padding:20px;color:#999;">Betöltés...</td></tr>
+        </tbody>
+      </table>
+      <p id="pmp-rename-msg" style="margin-top:12px;font-size:13px;min-height:20px;"></p>
+    </div>
+    <div class="pmp-modal-footer">
+      <button class="button button-primary" id="pmp-rename-submit" type="button">Átnevezések mentése</button>
+      <button class="button pmp-modal-close" type="button">Mégse</button>
     </div>
   </div>
 </div>

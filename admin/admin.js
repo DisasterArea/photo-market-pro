@@ -197,7 +197,37 @@ jQuery(function($){
 
     $('#pmp-bulk-files').on('change', function(){
         var $preview = $('#pmp-bulk-preview').empty();
-        Array.from(this.files).forEach(function(f){
+        var $info    = $('#pmp-folder-info').hide().text('');
+        var files    = Array.from(this.files);
+        if (!files.length) return;
+
+        // Parse folder name from webkitRelativePath
+        var folderName = '';
+        if (files[0].webkitRelativePath) {
+            folderName = files[0].webkitRelativePath.split('/')[0];
+        }
+
+        if (folderName) {
+            var parts = folderName.split('_');
+            var location = '', category = '', dateStr = '';
+            for (var i = 0; i < parts.length; i++) {
+                var m = parts[i].match(/^(\d{2})(\d{2})(\d{4})$/);
+                if (m) {
+                    dateStr  = m[1] + '.' + m[2] + '.' + m[3];
+                    location = parts.slice(0, i > 1 ? 1 : 1).join(' ').replace(/-/g,' ');
+                    category = i >= 2 ? parts.slice(1, i).join(' ').replace(/-/g,' ') : '';
+                    break;
+                }
+            }
+            if (!location && parts.length) location = parts[0].replace(/-/g,' ');
+            var infoText = '📁 Mappa: ' + folderName + ' | ' + files.length + ' kép';
+            if (location) infoText += ' | Helyszín: ' + location;
+            if (category) infoText += ' | Kat.: ' + category;
+            if (dateStr)  infoText += ' | Dátum: ' + dateStr;
+            $info.text(infoText).show();
+        }
+
+        files.forEach(function(f){
             var reader = new FileReader();
             var $item = $('<div class="pmp-bulk-preview-item">');
             var $img  = $('<img>');
@@ -216,7 +246,10 @@ jQuery(function($){
         var optIds = [];
         $('.pmp-bulk-opt-cb:checked').each(function(){ optIds.push($(this).val()); });
 
-        var fileArr = Array.from(files);
+        var fileArr    = Array.from(files);
+        var folderName = fileArr[0] && fileArr[0].webkitRelativePath
+            ? fileArr[0].webkitRelativePath.split('/')[0]
+            : '';
         var total   = fileArr.length;
         var done    = 0;
         var created = [];
@@ -290,11 +323,12 @@ jQuery(function($){
                     // Step 3: generate thumbnail in browser, send to WP
                     makeThumbnail(file, function(thumbBlob) {
                         var saveData = new FormData();
-                        saveData.append('action',      'pmp_bulk_upload');
-                        saveData.append('nonce',       nonce);
-                        saveData.append('bulk_price',  price);
-                        saveData.append('file_name',   file.name);
-                        saveData.append('r2_key',      r2Key);
+                        saveData.append('action',       'pmp_bulk_upload');
+                        saveData.append('nonce',        nonce);
+                        saveData.append('bulk_price',   price);
+                        saveData.append('file_name',    file.name);
+                        saveData.append('folder_name',  folderName);
+                        saveData.append('r2_key',       r2Key);
                         if (thumbBlob) saveData.append('thumb_file', thumbBlob, file.name);
                         optIds.forEach(function(id){ saveData.append('bulk_edit_options[]', id); });
 
@@ -315,6 +349,45 @@ jQuery(function($){
         }
 
         uploadNext(0);
+    });
+
+    /* ── Bulk rename modal ───────────────────────────────── */
+    $('#pmp-rename-btn').on('click', function(){
+        openModal('#pmp-rename-modal');
+        $.post(ajaxurl, {action:'pmp_get_filter_data', nonce:nonce}, function(res){
+            if (!res.success) return;
+            var rows = '';
+            (res.data.locations || []).forEach(function(v){
+                rows += '<tr data-type="location" data-old="'+$('<span>').text(v).html()+'"><td>'+$('<span>').text(v).html()+'</td><td style="color:#888;font-size:12px;">helyszín</td><td><input type="text" class="widefat pmp-rename-input" value="'+$('<span>').text(v).html()+'"></td></tr>';
+            });
+            (res.data.categories || []).forEach(function(v){
+                rows += '<tr data-type="category" data-old="'+$('<span>').text(v).html()+'"><td>'+$('<span>').text(v).html()+'</td><td style="color:#888;font-size:12px;">kategória</td><td><input type="text" class="widefat pmp-rename-input" value="'+$('<span>').text(v).html()+'"></td></tr>';
+            });
+            $('#pmp-rename-rows').html(rows || '<tr><td colspan="3" style="text-align:center;padding:20px;color:#999;">Nincs adat</td></tr>');
+        });
+    });
+
+    $('#pmp-rename-submit').on('click', function(){
+        var renames = [];
+        $('#pmp-rename-rows tr').each(function(){
+            var $tr  = $(this);
+            var type = $tr.data('type');
+            var old  = $tr.data('old');
+            var nv   = $tr.find('.pmp-rename-input').val();
+            if (type && old && nv && nv !== old) {
+                renames.push({type:type, old_value:old, new_value:nv});
+            }
+        });
+        if (!renames.length) { msg('#pmp-rename-msg','Nincs változás.',null); return; }
+        msg('#pmp-rename-msg','Mentés...', null);
+        $.post(ajaxurl, {action:'pmp_bulk_rename', nonce:nonce, renames:JSON.stringify(renames)}, function(res){
+            if (res.success) {
+                msg('#pmp-rename-msg','✅ '+res.data.updated+' rekord frissítve.', true);
+                setTimeout(function(){ location.reload(); }, 1200);
+            } else {
+                msg('#pmp-rename-msg','❌ '+(res.data||'Hiba'), false);
+            }
+        });
     });
 
     /* ── Edit options page ───────────────────────────────── */

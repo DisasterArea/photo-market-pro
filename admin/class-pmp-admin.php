@@ -28,6 +28,7 @@ class PMP_Admin {
         add_action( 'wp_ajax_pmp_delete_preupload',       [ __CLASS__, 'ajax_delete_preupload' ] );
         add_action( 'wp_ajax_pmp_send_order_email',       [ __CLASS__, 'ajax_send_order_email' ] );
         add_action( 'wp_ajax_pmp_get_r2_presigned_put',   [ __CLASS__, 'ajax_get_r2_presigned_put' ] );
+        add_action( 'wp_ajax_pmp_bulk_rename',            [ __CLASS__, 'ajax_bulk_rename' ] );
     }
 
     public static function admin_menu() {
@@ -279,17 +280,20 @@ class PMP_Admin {
         check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
 
-        $file_name = sanitize_file_name( $_POST['file_name'] ?? '' );
-        $r2_key    = sanitize_text_field( $_POST['r2_key']   ?? '' );
-        $price     = floatval( $_POST['bulk_price'] ?? 0 );
-        $opt_ids   = array_map( 'intval', $_POST['bulk_edit_options'] ?? [] );
+        $file_name   = sanitize_file_name( $_POST['file_name']   ?? '' );
+        $folder_name = sanitize_text_field( $_POST['folder_name'] ?? '' );
+        $r2_key      = sanitize_text_field( $_POST['r2_key']      ?? '' );
+        $price       = floatval( $_POST['bulk_price'] ?? 0 );
+        $opt_ids     = array_map( 'intval', $_POST['bulk_edit_options'] ?? [] );
 
         if ( ! $file_name || ! $r2_key ) {
             wp_send_json_error( 'Hiányzó fájlnév vagy R2 kulcs.' );
         }
 
-        $filename  = pathinfo( $file_name, PATHINFO_FILENAME );
-        $parts     = explode( '_', $filename );
+        // If a folder was browsed, use folder name for metadata; otherwise fall back to file name
+        $parse_source = $folder_name ?: pathinfo( $file_name, PATHINFO_FILENAME );
+        $filename     = pathinfo( $parse_source, PATHINFO_FILENAME );
+        $parts        = explode( '_', $filename );
 
         // Filename format: location_category_DDMMYYYY_seq  OR  location_DDMMYYYY_seq
         // Detect which part is the date (8 digits)
@@ -372,6 +376,78 @@ class PMP_Admin {
             'locations'  => PMP_Photo::get_locations(),
             'categories' => PMP_Photo::get_categories(),
         ] );
+    }
+
+    public static function ajax_bulk_rename() {
+        check_ajax_referer( 'pmp_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die();
+
+        $renames = json_decode( sanitize_text_field( $_POST['renames'] ?? '[]' ), true );
+        if ( ! is_array( $renames ) || empty( $renames ) ) {
+            wp_send_json_error( 'Nincs adat.' );
+        }
+
+        global $wpdb;
+        $updated = 0;
+
+        foreach ( $renames as $item ) {
+            $type      = $item['type']      ?? '';
+            $old_value = $item['old_value'] ?? '';
+            $new_value = $item['new_value'] ?? '';
+
+            if ( ! in_array( $type, [ 'location', 'category' ], true ) || ! $old_value || ! $new_value || $old_value === $new_value ) {
+                continue;
+            }
+
+            $col = $type === 'location' ? 'location' : 'category';
+
+            // Fetch affected photo IDs before updating
+            $photo_ids = $wpdb->get_col( $wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}pmp_photos WHERE {$col} = %s",
+                $old_value
+            ) );
+
+            // Update pmp_photos
+            $rows = $wpdb->update(
+                $wpdb->prefix . 'pmp_photos',
+                [ $col => $new_value ],
+                [ $col => $old_value ]
+            );
+
+            if ( $rows ) {
+                $updated += $rows;
+
+                // Update WooCommerce product titles
+                foreach ( $photo_ids as $photo_id ) {
+                    $photo = $wpdb->get_row( $wpdb->prepare(
+                        "SELECT * FROM {$wpdb->prefix}pmp_photos WHERE id = %d",
+                        $photo_id
+                    ), ARRAY_A );
+                    if ( ! $photo || ! $photo['wc_product_id'] ) continue;
+
+                    $new_title = PMP_Photo::generate_title(
+                        $photo['location'],
+                        $photo['shot_date'],
+                        (int) $photo_id,
+                        (int) $photo['preview_image_id']
+                    );
+
+                    wp_update_post( [
+                        'ID'         => (int) $photo['wc_product_id'],
+                        'post_title' => $new_title,
+                        'post_name'  => sanitize_title( $new_title ),
+                    ] );
+
+                    $wpdb->update(
+                        $wpdb->prefix . 'pmp_photos',
+                        [ 'title' => $new_title ],
+                        [ 'id'    => (int) $photo_id ]
+                    );
+                }
+            }
+        }
+
+        wp_send_json_success( [ 'updated' => $updated ] );
     }
 
     /* ── AJAX: Edit options ─────────────────────────────────── */
