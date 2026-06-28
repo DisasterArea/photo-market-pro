@@ -279,9 +279,11 @@ class PMP_Public {
 
     private static function query_photos( $filters, $count, $offset = 0 ) {
         global $wpdb;
-        $where = self::build_where( $filters );
+        $where  = self::build_where( $filters );
+        $is_unfiltered = empty( $filters['location'] ) && empty( $filters['category'] ) && empty( $filters['date_from'] ) && empty( $filters['date_to'] );
+        $order  = $is_unfiltered ? 'RAND()' : 'shot_date DESC, id DESC';
         return $wpdb->get_results(
-            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}pmp_photos $where ORDER BY shot_date DESC, id DESC LIMIT %d OFFSET %d", $count, $offset ),
+            $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}pmp_photos $where ORDER BY $order LIMIT %d OFFSET %d", $count, $offset ),
             ARRAY_A
         );
     }
