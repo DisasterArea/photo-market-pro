@@ -87,8 +87,8 @@ class PMP_Public {
     /* ── Shortcode ──────────────────────────────────────────── */
 
     public static function shortcode_gallery( $atts ) {
-        $atts  = shortcode_atts( [ 'count' => max( 18, intval( get_option( 'pmp_gallery_count', 18 ) ) ) ], $atts );
-        $count = max( 1, intval( $atts['count'] ) );
+        $atts  = shortcode_atts( [ 'count' => 18 ], $atts );
+        $count = max( 18, intval( $atts['count'] ) );
         $photos = self::query_photos( [], $count + 1 );
         $has_more = count( $photos ) > $count;
         if ( $has_more ) array_pop( $photos );
