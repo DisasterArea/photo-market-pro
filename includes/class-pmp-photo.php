@@ -10,6 +10,74 @@ class PMP_Photo {
         add_filter( 'woocommerce_get_item_data',             [ __CLASS__, 'display_cart_item_data' ], 10, 2 );
         add_action( 'woocommerce_checkout_create_order_line_item', [ __CLASS__, 'add_order_item_meta' ], 10, 4 );
         add_action( 'woocommerce_before_calculate_totals',   [ __CLASS__, 'recalculate_cart_item_price' ] );
+        add_action( 'woocommerce_product_thumbnails',        [ __CLASS__, 'render_image_overlay' ] );
+    }
+
+    /* ── Image overlay: title + price + lightbox trigger ─── */
+
+    public static function render_image_overlay() {
+        global $product;
+        if ( ! $product ) return;
+        $photo = self::get_by_product( $product->get_id() );
+        if ( ! $photo ) return;
+
+        $title    = get_the_title( $product->get_id() );
+        $price    = wc_price( $product->get_price() );
+        $img_url  = wp_get_attachment_image_url( $product->get_image_id(), 'full' ) ?: wc_placeholder_img_src( 'full' );
+        ?>
+        <div class="pmp-product-img-overlay">
+            <div class="pmp-product-img-bottom">
+                <span class="pmp-product-img-title"><?php echo esc_html( $title ); ?></span>
+                <span class="pmp-product-img-price"><?php echo wp_kses_post( $price ); ?></span>
+            </div>
+        </div>
+        <script>
+        (function(){
+            function initProductLightbox() {
+                var galleryImg = document.querySelector('.woocommerce-product-gallery__image img');
+                if ( ! galleryImg ) return;
+                var wrap = galleryImg.closest('.woocommerce-product-gallery__image') || galleryImg.parentElement;
+                wrap.style.cursor = 'zoom-in';
+                wrap.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var src = '<?php echo esc_js( $img_url ); ?>';
+                    var lb = document.getElementById('pmp-lightbox');
+                    if ( ! lb ) {
+                        lb = document.createElement('div');
+                        lb.id = 'pmp-lightbox';
+                        lb.setAttribute('role','dialog');
+                        lb.innerHTML = '<button id="pmp-lb-close">✕</button>' +
+                            '<div id="pmp-lb-img-wrap"><img id="pmp-lb-img" src="" alt="">' +
+                            '<div id="pmp-lb-overlay"><div id="pmp-lb-tags"></div>' +
+                            '<div id="pmp-lb-bottom"><span id="pmp-lb-title"></span>' +
+                            '<a id="pmp-lb-buy" href="#"></a></div></div></div>';
+                        document.body.appendChild(lb);
+                        lb.addEventListener('click', function(ev) { if(ev.target===lb) closeLb(); });
+                        document.getElementById('pmp-lb-close').addEventListener('click', closeLb);
+                        document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') closeLb(); });
+                    }
+                    document.getElementById('pmp-lb-img').src = src;
+                    document.getElementById('pmp-lb-prev') && (document.getElementById('pmp-lb-prev').style.display='none');
+                    document.getElementById('pmp-lb-next') && (document.getElementById('pmp-lb-next').style.display='none');
+                    document.getElementById('pmp-lb-tags').innerHTML = '';
+                    document.getElementById('pmp-lb-title').textContent = '<?php echo esc_js( $title ); ?>';
+                    document.getElementById('pmp-lb-buy').style.display = 'none';
+                    lb.classList.add('open');
+                    document.body.style.overflow = 'hidden';
+                });
+            }
+            function closeLb() {
+                var lb = document.getElementById('pmp-lightbox');
+                if (lb) { lb.classList.remove('open'); document.body.style.overflow=''; }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initProductLightbox);
+            } else {
+                initProductLightbox();
+            }
+        })();
+        </script>
+        <?php
     }
 
     /* ── Frontend edit options ────────────────────────────── */
