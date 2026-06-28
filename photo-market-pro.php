@@ -4,7 +4,7 @@
  * Plugin URI:  https://yoursite.com
  * Description: Digitális fotó értékesítés WooCommerce-hez – kategóriák, szerkesztési opciók, biztonságos letöltési linkek, külső szerver támogatás.
 
- * Version:     1.8.2
+ * Version:     1.8.3
 
  * Author:      Your Name
  * Text Domain: photo-market-pro
@@ -16,7 +16,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 
-define( 'PMP_VERSION',     '1.8.2' );
+define( 'PMP_VERSION',     '1.8.3' );
 
 define( 'PMP_FILE',        __FILE__ );
 define( 'PMP_DIR',         plugin_dir_path( __FILE__ ) );
@@ -43,6 +43,7 @@ function pmp_boot() {
     }
 
     require_once PMP_DIR . 'includes/class-pmp-photo.php';
+    require_once PMP_DIR . 'includes/class-pmp-watermark.php';
     require_once PMP_DIR . 'includes/class-pmp-edit-options.php';
     require_once PMP_DIR . 'includes/class-pmp-download.php';
     require_once PMP_DIR . 'includes/class-pmp-order.php';
@@ -52,6 +53,7 @@ function pmp_boot() {
     require_once PMP_DIR . 'includes/class-pmp-my-account.php';
 
     PMP_Install::init();
+    PMP_Watermark::init();
     PMP_Photo::init();
     PMP_Edit_Options::init();
     PMP_Download::init();
