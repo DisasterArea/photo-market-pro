@@ -430,9 +430,10 @@ body input.pmp-filter-select:focus {
   width: 100% !important;
   height: auto !important;
   max-height: 520px !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
   border-radius: 10px !important;
   display: block !important;
+  background: #111 !important;
 }
 
 /* Hide WC zoom icon, we handle click ourselves */
@@ -576,6 +577,16 @@ body input.pmp-filter-select:focus {
   font-size: 13px;
   color: #aaa;
 }
+
+.pmp-back-btn {
+  display: inline-block;
+  margin-top: 14px;
+  color: #777;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color .2s;
+}
+.pmp-back-btn:hover { color: #ccc; }
 
 /* ── Order downloads ──────────────────────────────── */
 .pmp-order-downloads { margin-top: 28px; }

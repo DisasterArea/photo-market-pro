@@ -11,6 +11,7 @@ class PMP_Photo {
         add_action( 'woocommerce_checkout_create_order_line_item', [ __CLASS__, 'add_order_item_meta' ], 10, 4 );
         add_action( 'woocommerce_before_calculate_totals',   [ __CLASS__, 'recalculate_cart_item_price' ] );
         add_action( 'woocommerce_product_thumbnails',        [ __CLASS__, 'render_image_overlay' ] );
+        add_action( 'woocommerce_after_add_to_cart_button',  [ __CLASS__, 'render_back_button' ] );
     }
 
     /* ── Image overlay: title + price + lightbox trigger ─── */
@@ -157,6 +158,18 @@ class PMP_Photo {
             $data['unique_key']       = md5( microtime() . rand() );
         }
         return $data;
+    }
+
+    public static function render_back_button() {
+        global $product;
+        if ( ! $product ) return;
+        if ( ! self::get_by_product( $product->get_id() ) ) return;
+
+        $back_url = wc_get_page_permalink( 'shop' );
+        $referer  = wp_get_referer();
+        if ( $referer && strpos( $referer, home_url() ) !== false ) $back_url = $referer;
+
+        echo '<a href="' . esc_url( $back_url ) . '" class="pmp-back-btn">← Torna alla ricerca</a>';
     }
 
     public static function recalculate_cart_item_price( $cart ) {
