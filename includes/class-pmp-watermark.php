@@ -5,6 +5,13 @@ class PMP_Watermark {
 
     const TEXT    = '© ArcoScatto.it';
     const OPACITY = 0.30;
+    const MARGIN  = 0.05; // 5% margin from edges
+
+    /*
+     * Text spans the 45° diagonal from near the left edge to near the top edge.
+     * Font size is calculated so the text fills that diagonal length.
+     * Center of text = center of image's short-side diagonal = (s/2, s/2).
+     */
 
     public static function init() {
         add_filter( 'wp_handle_upload', [ __CLASS__, 'apply' ], 10, 2 );
@@ -35,20 +42,30 @@ class PMP_Watermark {
             $h   = $img->getImageHeight();
             $s   = min( $w, $h );
 
-            $font_size = max( 20, intval( $s * 0.06 ) );
+            $margin      = intval( $s * self::MARGIN );
+            $target_len  = ( $s - 2 * $margin ) * sqrt( 2 );
 
-            // Center on 45° line: distance s/2 from corner → x=y= s/2/sqrt(2) = s*0.354
-            $cx = intval( $s * 0.354 );
-            $cy = intval( $s * 0.354 );
+            // Measure text at reference size, then scale to fill diagonal
+            $draw_ref = new ImagickDraw();
+            $draw_ref->setFontSize( 40 );
+            foreach ( [ 'Arial', 'DejaVu-Sans', 'Liberation-Sans', 'Helvetica' ] as $f ) {
+                try { $draw_ref->setFont( $f ); break; } catch ( Exception $e ) { }
+            }
+            $metrics   = $img->queryFontMetrics( $draw_ref, self::TEXT );
+            $ref_tw    = $metrics['textWidth'] ?? 400;
+            $font_size = max( 12, intval( 40 * $target_len / $ref_tw ) );
 
             $draw = new ImagickDraw();
             $draw->setFontSize( $font_size );
             $draw->setFillColor( new ImagickPixel( 'rgba(255,255,255,' . self::OPACITY . ')' ) );
             $draw->setTextAntialias( true );
-
             foreach ( [ 'Arial', 'DejaVu-Sans', 'Liberation-Sans', 'Helvetica' ] as $f ) {
                 try { $draw->setFont( $f ); break; } catch ( Exception $e ) { }
             }
+
+            // Center of diagonal
+            $cx = intval( $s / 2 );
+            $cy = intval( $s / 2 );
 
             $img->annotateImage( $draw, $cx, $cy, -45, self::TEXT );
 
@@ -74,19 +91,21 @@ class PMP_Watermark {
         $h = imagesy( $src );
         $s = min( $w, $h );
 
-        $font_size = max( 20, intval( $s * 0.06 ) );
+        $margin     = intval( $s * self::MARGIN );
+        $target_len = ( $s - 2 * $margin ) * sqrt( 2 ); // diagonal length to fill
 
-        // Target center: on the 45° line, distance s/2 from corner → x = y = s * 0.354
-        $cx = intval( $s * 0.354 );
-        $cy = intval( $s * 0.354 );
+        // Measure text at reference size to calculate needed font size
+        $bbox_ref  = imagettfbbox( 40, 0, $font, self::TEXT );
+        $ref_tw    = abs( $bbox_ref[2] - $bbox_ref[0] );
+        $font_size = max( 12, intval( 40 * $target_len / $ref_tw ) );
 
-        // Step 1: measure text at 0° to get real pixel dimensions
+        // Measure actual text at final font size
         $bbox = imagettfbbox( $font_size, 0, $font, self::TEXT );
-        $tw   = abs( $bbox[2] - $bbox[0] ); // width
-        $th   = abs( $bbox[7] - $bbox[1] ); // height
-        $pad  = intval( $th * 0.6 );
+        $tw   = abs( $bbox[2] - $bbox[0] );
+        $th   = abs( $bbox[7] - $bbox[1] );
+        $pad  = intval( $th * 0.4 );
 
-        // Step 2: draw text on its own canvas (horizontal, centered)
+        // Draw text on its own horizontal canvas, centered
         $lw    = $tw + $pad * 2;
         $lh    = $th + $pad * 2;
         $layer = imagecreatetruecolor( $lw, $lh );
@@ -100,13 +119,12 @@ class PMP_Watermark {
         $white  = imagecolorallocatealpha( $layer, 255, 255, 255, $alpha );
         $shadow = imagecolorallocatealpha( $layer, 0,   0,   0,   min( 127, $alpha + 25 ) );
 
-        // baseline y: pad from bottom of layer
         $bx = $pad;
         $by = $lh - $pad;
         imagettftext( $layer, $font_size, 0, $bx + 2, $by + 1, $shadow, $font, self::TEXT );
         imagettftext( $layer, $font_size, 0, $bx,     $by,     $white,  $font, self::TEXT );
 
-        // Step 3: rotate 45° CCW (GD convention: positive = CCW)
+        // Rotate 45° CCW
         $rotated = imagerotate( $layer, 45, $trans, 1 );
         imagesavealpha( $rotated, true );
         imagedestroy( $layer );
@@ -114,7 +132,9 @@ class PMP_Watermark {
         $rw = imagesx( $rotated );
         $rh = imagesy( $rotated );
 
-        // Step 4: place so CENTER of rotated layer = (cx, cy)
+        // Center of diagonal = (s/2, s/2)
+        $cx = intval( $s / 2 );
+        $cy = intval( $s / 2 );
         $dx = $cx - intval( $rw / 2 );
         $dy = $cy - intval( $rh / 2 );
 
