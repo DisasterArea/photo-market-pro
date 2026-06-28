@@ -5,9 +5,9 @@ jQuery(function($){
     var nonce   = cfg.nonce;
     var $wrap   = $('.pmp-gallery-wrap');
     if ( !$wrap.length ) return;
-    var count    = parseInt( $wrap.data('count') ) || 6;
-    var pageSize = 25;
-    var curPage  = 0;
+    var count    = parseInt( $wrap.data('count') ) || 18;
+    var pageSize = count;
+    var curPage  = parseInt( $wrap.data('page') ) || 0;
     var curFilters = {};
 
     /* ── Boot: load dropdowns ──────────────────────── */

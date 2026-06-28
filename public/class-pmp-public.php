@@ -87,12 +87,14 @@ class PMP_Public {
     /* ── Shortcode ──────────────────────────────────────────── */
 
     public static function shortcode_gallery( $atts ) {
-        $atts  = shortcode_atts( [ 'count' => get_option( 'pmp_gallery_count', 6 ) ], $atts );
+        $atts  = shortcode_atts( [ 'count' => get_option( 'pmp_gallery_count', 18 ) ], $atts );
         $count = max( 1, intval( $atts['count'] ) );
-        $photos = self::query_photos( [], $count );
+        $photos = self::query_photos( [], $count + 1 );
+        $has_more = count( $photos ) > $count;
+        if ( $has_more ) array_pop( $photos );
 
         ob_start(); ?>
-        <div class="pmp-gallery-wrap" data-count="<?php echo esc_attr( $count ); ?>">
+        <div class="pmp-gallery-wrap" data-count="<?php echo esc_attr( $count ); ?>" data-page="<?php echo $has_more ? 1 : 0; ?>">
 
           <div class="pmp-filters" id="pmp-filters">
             <div class="pmp-filter-row">
@@ -134,6 +136,11 @@ class PMP_Public {
           <div class="pmp-gallery-loading" id="pmp-gallery-loading" style="display:none;">
             <div class="pmp-spinner-wrap"><span class="pmp-spinner"></span><span>Caricamento...</span></div>
           </div>
+          <?php if ( $has_more ): ?>
+          <div id="pmp-load-more-wrap" style="text-align:center;margin:24px 0;">
+            <button class="pmp-btn-load-more" id="pmp-load-more-btn">Carica altri →</button>
+          </div>
+          <?php endif; ?>
         </div>
 
         <?php return ob_get_clean();
