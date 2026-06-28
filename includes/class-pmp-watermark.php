@@ -6,16 +6,13 @@ class PMP_Watermark {
     const TEXT    = '© ArcoScatto.it';
     const OPACITY = 0.30;
 
-    // Track processed attachment IDs to avoid double-processing
-    private static $processed = [];
-
     public static function init() {
         add_filter( 'wp_generate_attachment_metadata', [ __CLASS__, 'apply_on_metadata' ], 10, 2 );
     }
 
     public static function apply_on_metadata( $metadata, $attachment_id ) {
-        if ( isset( self::$processed[ $attachment_id ] ) ) return $metadata;
-        self::$processed[ $attachment_id ] = true;
+        // Use post meta to prevent double-processing across any request
+        if ( get_post_meta( $attachment_id, '_pmp_watermarked', true ) ) return $metadata;
 
         $mime = get_post_mime_type( $attachment_id );
         $log  = date('H:i:s') . " apply() attachment_id=$attachment_id mime=$mime imagick=" . (class_exists('Imagick')?'yes':'no') . "\n";
@@ -25,6 +22,8 @@ class PMP_Watermark {
 
         $file = get_attached_file( $attachment_id );
         if ( ! $file || ! file_exists( $file ) ) return $metadata;
+
+        update_post_meta( $attachment_id, '_pmp_watermarked', 1 );
 
         if ( class_exists( 'Imagick' ) ) {
             self::apply_imagick( $file, $mime );
