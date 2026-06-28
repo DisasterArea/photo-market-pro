@@ -211,21 +211,25 @@ class PMP_Photo {
      * Generate unique title: location_date_N
      * e.g. budapest_20240315_1, budapest_20240315_2 ...
      */
-    public static function generate_title( $location, $shot_date, $existing_photo_id = 0 ) {
-        global $wpdb;
-
+    public static function generate_title( $location, $shot_date, $existing_photo_id = 0, $img_id = 0 ) {
         // Build slug-style base
         $loc_slug  = strtolower( sanitize_title( $location ) );
         $date_slug = $shot_date ? date( 'dmY', strtotime( $shot_date ) ) : date( 'dmY' );
         $base      = $loc_slug . '_' . $date_slug;
 
-        // Find existing count for this base (excluding current photo on edit)
+        // Use attachment ID as unique suffix when available (avoids race condition on bulk upload)
+        if ( $img_id ) {
+            return $base . '_' . $img_id;
+        }
+
+        // Fallback: find MAX existing suffix number
+        global $wpdb;
         $exclude = $existing_photo_id ? $wpdb->prepare( ' AND id != %d', $existing_photo_id ) : '';
-        $count   = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}pmp_photos WHERE title LIKE '" . esc_sql( $base ) . "_%'" . $exclude
+        $max     = (int) $wpdb->get_var(
+            "SELECT MAX(CAST(SUBSTRING_INDEX(title, '_', -1) AS UNSIGNED)) FROM {$wpdb->prefix}pmp_photos WHERE title LIKE '" . esc_sql( $base ) . "_%'" . $exclude
         );
 
-        return $base . '_' . ( $count + 1 );
+        return $base . '_' . ( $max + 1 );
     }
 
     public static function save( $data, $photo_id = 0 ) {
@@ -242,8 +246,8 @@ class PMP_Photo {
         $dl_url      = esc_url_raw( $data['download_url'] ?? '' );
         $opt_ids     = array_map( 'intval', (array)( $data['edit_option_ids'] ?? [] ) );
 
-        // Title: always auto-generate from location + date + sequence
-        $title = self::generate_title( $location, $shot_date, $photo_id );
+        // Title: always auto-generate from location + date + attachment ID (unique)
+        $title = self::generate_title( $location, $shot_date, $photo_id, $img_id );
 
         // ── WC Product ──────────────────────────────────────
         $product_id = 0;

@@ -284,7 +284,10 @@ class PMP_Public {
         global $wpdb;
         $where  = self::build_where( $filters );
         $is_unfiltered = empty( $filters['location'] ) && empty( $filters['category'] ) && empty( $filters['date_from'] ) && empty( $filters['date_to'] );
-        $order  = $is_unfiltered ? 'RAND()' : 'shot_date DESC, id DESC';
+        // Use seeded RAND so pagination stays consistent within a session
+        $seed   = isset( $_COOKIE['pmp_seed'] ) ? intval( $_COOKIE['pmp_seed'] ) : rand( 1, 99999 );
+        if ( ! isset( $_COOKIE['pmp_seed'] ) ) setcookie( 'pmp_seed', $seed, time() + 3600, '/' );
+        $order  = $is_unfiltered ? "RAND($seed)" : 'shot_date DESC, id DESC';
         return $wpdb->get_results(
             $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}pmp_photos $where ORDER BY $order LIMIT %d OFFSET %d", $count, $offset ),
             ARRAY_A
