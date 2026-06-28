@@ -38,33 +38,52 @@ class PMP_Watermark {
             $s      = min( $w, $h );
             $margin = intval( $s * 0.05 );
 
-            // Scale font so text width = diagonal length from (margin,s-margin) to (s-margin,margin)
-            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 );
-            $draw_ref  = new ImagickDraw();
-            $draw_ref->setFontSize( 40 );
-            foreach ( [ 'Arial', 'DejaVu-Sans', 'Liberation-Sans', 'Helvetica' ] as $f ) {
-                try { $draw_ref->setFont( $f ); break; } catch ( Exception $e ) { }
-            }
-            $metrics   = $img->queryFontMetrics( $draw_ref, self::TEXT );
-            $ref_tw    = $metrics['textWidth'] ?? 400;
-            $font_size = max( 14, intval( 40 * $diag_len / $ref_tw ) );
-
+            // Set up draw object with font
             $draw = new ImagickDraw();
-            $draw->setFontSize( $font_size );
-            $draw->setFillColor( new ImagickPixel( 'rgba(255,255,255,' . self::OPACITY . ')' ) );
-            $draw->setTextAntialias( true );
             foreach ( [ 'Arial', 'DejaVu-Sans', 'Liberation-Sans', 'Helvetica' ] as $f ) {
                 try { $draw->setFont( $f ); break; } catch ( Exception $e ) { }
             }
+            $draw->setTextAntialias( true );
 
-            // Imagick annotateImage origin: top-left of text bounding box + angle CW
-            // Place center at (s/2, s/2)
-            $img->annotateImage( $draw, intval( $s / 2 ), intval( $s / 2 ), -45, self::TEXT );
+            // Measure text at reference size 40
+            $draw->setFontSize( 40 );
+            $metrics = $img->queryFontMetrics( $draw, self::TEXT );
+            $ref_tw  = $metrics['textWidth'] ?? 0;
+            $ref_th  = $metrics['textHeight'] ?? 0;
+
+            // Target: text diagonal fills from (margin,s-margin) to (s-margin,margin)
+            $diag_len  = ( $s - 2 * $margin ) * sqrt( 2 );
+            $font_size = ( $ref_tw > 0 ) ? intval( 40 * $diag_len / $ref_tw ) : 60;
+            $font_size = max( 14, $font_size );
+
+            // Safety loop: shrink until (tw + th)*0.707 fits within s-2*margin on each axis
+            $tx = $margin;
+            $ty = $s - $margin;
+            for ( $i = 0; $i < 15; $i++ ) {
+                $draw->setFontSize( $font_size );
+                $m      = $img->queryFontMetrics( $draw, self::TEXT );
+                $tw     = $m['textWidth']  ?? $font_size * 8;
+                $th     = $m['textHeight'] ?? $font_size * 1.3;
+                $extent = intval( ( $tw + $th ) * 0.707 );
+                $log    = date('H:i:s') . " imagick iter=$i font=$font_size tw=$tw th=$th extent=$extent need_x=" . ($tx+$extent) . "<=" . ($w-$margin) . " need_y=" . ($ty-$extent) . ">=$margin\n";
+                file_put_contents( PMP_DIR . 'wm-debug.log', $log, FILE_APPEND );
+                if ( $tx + $extent <= ( $w - $margin ) && $ty - $extent >= $margin ) break;
+                $font_size = intval( $font_size * 0.85 );
+            }
+
+            $draw->setFontSize( $font_size );
+            $draw->setFillColor( new ImagickPixel( 'rgba(255,255,255,' . self::OPACITY . ')' ) );
+
+            // annotateImage(draw, x, y, angle, text): x,y = baseline origin, angle = CW degrees
+            // At -45 CW = 45 CCW: text goes lower-left to upper-right
+            $img->annotateImage( $draw, $tx, $ty, -45, self::TEXT );
 
             if ( $mime === 'image/jpeg' ) $img->setImageCompressionQuality( 92 );
             $img->writeImage( $file );
             $img->destroy();
-        } catch ( Exception $e ) { }
+        } catch ( Exception $e ) {
+            file_put_contents( PMP_DIR . 'wm-debug.log', date('H:i:s') . " imagick exception: " . $e->getMessage() . "\n", FILE_APPEND );
+        }
     }
 
     private static function apply_gd( $file, $mime ) {
