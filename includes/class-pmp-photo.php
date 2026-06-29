@@ -34,9 +34,27 @@ class PMP_Photo {
         </div>
         <script>
         (function(){
+            function positionProductOverlay() {
+                var img     = document.querySelector('.woocommerce-product-gallery__image img');
+                var overlay = document.querySelector('.pmp-product-img-overlay');
+                if ( ! img || ! overlay ) return;
+                var imageDiv = img.closest('.woocommerce-product-gallery__image') || img.parentElement;
+                if ( overlay.parentElement !== imageDiv ) imageDiv.appendChild(overlay);
+                requestAnimationFrame(function() {
+                    var ir = img.getBoundingClientRect();
+                    var dr = imageDiv.getBoundingClientRect();
+                    overlay.style.left   = Math.round(ir.left   - dr.left)  + 'px';
+                    overlay.style.right  = Math.round(dr.right  - ir.right) + 'px';
+                    overlay.style.bottom = Math.round(dr.bottom - ir.bottom) + 'px';
+                    overlay.style.top    = 'auto';
+                });
+            }
             function initProductLightbox() {
                 var galleryImg = document.querySelector('.woocommerce-product-gallery__image img');
                 if ( ! galleryImg ) return;
+                positionProductOverlay();
+                galleryImg.addEventListener('load', positionProductOverlay);
+                window.addEventListener('resize', positionProductOverlay);
                 var wrap = galleryImg.closest('.woocommerce-product-gallery__image') || galleryImg.parentElement;
                 wrap.style.cursor = 'zoom-in';
                 wrap.addEventListener('click', function(e) {

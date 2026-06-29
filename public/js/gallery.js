@@ -89,12 +89,33 @@ jQuery(function($){
         });
     }
 
+    function positionLbOverlay() {
+        var img     = document.getElementById( 'pmp-lb-img' );
+        var overlay = document.getElementById( 'pmp-lb-overlay' );
+        if ( ! img || ! overlay ) return;
+        requestAnimationFrame( function() {
+            overlay.style.left   = img.offsetLeft   + 'px';
+            overlay.style.top    = img.offsetTop    + 'px';
+            overlay.style.width  = img.offsetWidth  + 'px';
+            overlay.style.height = img.offsetHeight + 'px';
+            overlay.style.right  = 'auto';
+            overlay.style.bottom = 'auto';
+        } );
+    }
+
+    $( window ).on( 'resize.lboverlay', function() {
+        if ( $( '#pmp-lightbox' ).hasClass( 'open' ) ) positionLbOverlay();
+    } );
+
     function showLbPhoto( idx ) {
         if ( ! lbList.length ) return;
         idx = ( idx + lbList.length ) % lbList.length;
         lbIndex = idx;
         var p = lbList[ idx ];
-        $( '#pmp-lb-img' ).attr( { src: p.img, alt: p.title } );
+        var $lbImg = $( '#pmp-lb-img' );
+        $lbImg.off( 'load.lboverlay' ).on( 'load.lboverlay', positionLbOverlay );
+        $lbImg.attr( { src: p.img, alt: p.title } );
+        if ( $lbImg[0].complete ) positionLbOverlay();
         $( '#pmp-lb-title' ).text( p.price ? p.title + '  –  ' + p.price : p.title );
         $( '#pmp-lb-buy' ).attr( 'href', p.product );
 
