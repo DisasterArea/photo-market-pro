@@ -401,6 +401,10 @@ body input.pmp-filter-select:focus {
   position: relative !important;
   float: none !important;
   margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 .single-product div.summary {
   flex: 1 1 0 !important;

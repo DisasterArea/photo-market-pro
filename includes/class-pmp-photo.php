@@ -34,6 +34,24 @@ class PMP_Photo {
         </div>
         <script>
         (function(){
+            function pmpPosLbOverlay() {
+                var img     = document.getElementById('pmp-lb-img');
+                var overlay = document.getElementById('pmp-lb-overlay');
+                var wrap    = document.getElementById('pmp-lb-img-wrap');
+                if ( ! img || ! overlay || ! wrap ) return;
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        var ir = img.getBoundingClientRect();
+                        var wr = wrap.getBoundingClientRect();
+                        overlay.style.left   = Math.round(ir.left   - wr.left) + 'px';
+                        overlay.style.top    = Math.round(ir.top    - wr.top)  + 'px';
+                        overlay.style.width  = Math.round(ir.width)  + 'px';
+                        overlay.style.height = Math.round(ir.height) + 'px';
+                        overlay.style.right  = 'auto';
+                        overlay.style.bottom = 'auto';
+                    });
+                });
+            }
             function positionProductOverlay() {
                 var img     = document.querySelector('.woocommerce-product-gallery__image img');
                 var overlay = document.querySelector('.pmp-product-img-overlay');
@@ -76,7 +94,9 @@ class PMP_Photo {
                         document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') closeLb(); });
                         lb.addEventListener('touchmove', function(ev){ ev.preventDefault(); }, { passive: false });
                     }
-                    document.getElementById('pmp-lb-img').src = src;
+                    var lbImg = document.getElementById('pmp-lb-img');
+                    lbImg.onload = pmpPosLbOverlay;
+                    lbImg.src = src;
                     document.getElementById('pmp-lb-prev') && (document.getElementById('pmp-lb-prev').style.display='none');
                     document.getElementById('pmp-lb-next') && (document.getElementById('pmp-lb-next').style.display='none');
                     document.getElementById('pmp-lb-tags').innerHTML = '';
@@ -84,6 +104,7 @@ class PMP_Photo {
                     document.getElementById('pmp-lb-buy').style.display = 'none';
                     lb.classList.add('open');
                     document.body.style.overflow = 'hidden';
+                    if (lbImg.complete) pmpPosLbOverlay();
                 });
             }
             function closeLb() {

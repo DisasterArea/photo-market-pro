@@ -92,14 +92,19 @@ jQuery(function($){
     function positionLbOverlay() {
         var img     = document.getElementById( 'pmp-lb-img' );
         var overlay = document.getElementById( 'pmp-lb-overlay' );
-        if ( ! img || ! overlay ) return;
+        var wrap    = document.getElementById( 'pmp-lb-img-wrap' );
+        if ( ! img || ! overlay || ! wrap ) return;
         requestAnimationFrame( function() {
-            overlay.style.left   = img.offsetLeft   + 'px';
-            overlay.style.top    = img.offsetTop    + 'px';
-            overlay.style.width  = img.offsetWidth  + 'px';
-            overlay.style.height = img.offsetHeight + 'px';
-            overlay.style.right  = 'auto';
-            overlay.style.bottom = 'auto';
+            requestAnimationFrame( function() {
+                var ir = img.getBoundingClientRect();
+                var wr = wrap.getBoundingClientRect();
+                overlay.style.left   = Math.round( ir.left   - wr.left ) + 'px';
+                overlay.style.top    = Math.round( ir.top    - wr.top  ) + 'px';
+                overlay.style.width  = Math.round( ir.width  ) + 'px';
+                overlay.style.height = Math.round( ir.height ) + 'px';
+                overlay.style.right  = 'auto';
+                overlay.style.bottom = 'auto';
+            } );
         } );
     }
 
