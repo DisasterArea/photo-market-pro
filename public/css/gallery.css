@@ -640,7 +640,6 @@ body input.pmp-filter-select:focus {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 12px;
   pointer-events: none;
 }
 
@@ -649,6 +648,11 @@ body input.pmp-filter-select:focus {
   flex-wrap: wrap;
   gap: 6px;
   pointer-events: all;
+  padding: 12px 12px 0;
+}
+
+#pmp-lb-bottom {
+  padding: 0 12px 12px;
 }
 
 .pmp-lb-tag {
